@@ -1,0 +1,32 @@
+version: "3.3"
+
+services:
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - "dbdata:/var/lib/postgresql/data"
+      - "/home:/mnt/Users"
+    env_file:
+      - postgres.env
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    
+  swagger:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "7080:8080"
+    volumes:
+      - "./openapis:/mnt/openapis"
+    environment:
+      SWAGGER_JSON: /mnt/openapis/swagger.json
+
+volumes:
+  dbdata:
+
