@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   postgres:
-    image: postgres
+    image: postgres:9.6
     ports:
       - "5432:5432"
     volumes:
@@ -23,10 +23,20 @@ services:
     ports:
       - "7080:8080"
     volumes:
-      - "./openapis:/mnt/openapis"
+      - "./openapis:/mnt/localdev/openapis"
+      - "/home:/mnt/Users"
     environment:
       SWAGGER_JSON: /mnt/openapis/swagger.json
 
+  jenkins:
+    image: jenkins/jenkins:lts
+    ports:
+      - "7090:8080"
+    volumes:
+      - "jenkins_data:/var/jenkins_home"
+      - "/home:/mnt/Users"
+      - "/home/reuben/Secrets:/mnt/secrets"
+
 volumes:
   dbdata:
-
+  jenkins_data:
