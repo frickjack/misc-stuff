@@ -1,0 +1,10 @@
+Host dev
+   HostName 34.34.34.34
+   User ubuntu
+   ForwardAgent yes
+
+Host dev-k8s
+   HostName 172.16.24.202
+   User ubuntu
+   ForwardAgent yes
+   ProxyCommand ssh dev nc %h %p 2> /dev/null
