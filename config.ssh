@@ -1,9 +1,30 @@
+Host *.domain.net:
+   ServerAliveInterval 120
+   User ubuntu
+   ForwardAgent yes
+
+Host k8s.domain.net
+   ServerAliveInterval 120
+   HostName 172.16.39.238
+   User ubuntu
+   ForwardAgent yes
+   ProxyCommand ssh ubuntu@admin.domain.net nc %h %p 2> /dev/null
+
+Host proxy.domain.net
+   ServerAliveInterval 120
+   HostName 172.16.128.111
+   User ubuntu
+   ForwardAgent yes
+   ProxyCommand ssh ubuntu@admin.domain.net nc %h %p 2> /dev/null
+
 Host dev
-   HostName 34.34.34.34
+   ServerAliveInterval 120
+   HostName 34.225.173.24
    User ubuntu
    ForwardAgent yes
 
 Host dev-k8s
+   ServerAliveInterval 120
    HostName 172.16.24.202
    User ubuntu
    ForwardAgent yes
