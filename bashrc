@@ -21,3 +21,12 @@ set -o vi
 # see https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 # trash-cli
 
+# ex: genpassword | xsel -b
+genpassword() {
+    # Generate a random string of alphanumeric characters of length $1.
+    base64 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32
+}
+
+# less with escape-char support
+alias lessr='less -R'
+
