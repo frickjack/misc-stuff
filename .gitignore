@@ -17,6 +17,7 @@ dist/
 eggs/
 lib/
 lib64/
+node_modules/
 parts/
 sdist/
 var/
@@ -67,3 +68,5 @@ docs/_build/
 local_settings.py
 settings.yaml
 *.sq3
+data-in/
+data-out/
