@@ -1,9 +1,12 @@
 const fetch = require('node-fetch');
 const mkdirp = require('mkdirp');
+const fs = require('fs');
 
+const logLevel = 3;
 const gdcUrlBase = 'https://api.gdc.cancer.gov';
-const outputFolder = './data-out';
-const inputFolder = './data-in';
+const defaultInputFolder = './data-in';
+const defaultOutputFolder = './data-out';
+
 
 function a_mkdirp(pathStr) {
   return new Promise( function(resolve, reject) {
@@ -26,7 +29,7 @@ function buildIndexdRecord(meta) {
     "acl": [
     ],
     "did": "",
-    "file_name": "",
+    //"file_name": "",
     "form": "object",
     "hashes": {
       //"md5": "c1898b7f2865ef7d7847b40e58f7c49c"
@@ -45,50 +48,15 @@ function buildIndexdRecord(meta) {
   };
 
   if( ! (record.acl.length > 0 
-        && record.did && record.file_name && record.hashes.md5 
+        && record.did //&& record.file_name 
+        && record.hashes.md5 
         && record.size > 0 && record.urls.length > 0) ) 
   {
-    let msg = console.log('Invalid record: ' + JSON.stringify(record));
-    console.log(msg);
+    let msg = console.log('Invalid record: ' + JSON.stringify(record, null, 4));
+    logLevel > 0 && console.log(msg);
     throw new Error(msg);
   }
   return record;
-}
-
-/**
- * Try to find the record in the "current" GDC file info index
- * @param {string} uuidStr
- * @param {IndexdMeta} metaSuper optional supplemental metadata
- *      to merge into the result
- * @return Promise<IndexdMeta> indexd metadata record constructed
- *      by overlaying meta from the server onto metaSuper 
- */
-function fetchCurrentRecord(uuidStr, metaSuper) {
-  const urlStr = gdcUrlBase + '/files/' + uuidStr;
-  return fetch(urlStr
-    ).then( 
-      (res) => {
-        if( res.status !== 200 ) { 
-          return Promise.reject( 'failed fetch, got ' + res.status + ' on ' + urlStr);
-        }
-        return res.json();
-      }
-  ).then(
-    function(info) {
-      console.log('fetchCurrentRecord got: ' + JSON.stringify(info));
-      return info;
-      const record = {
-        acl: info.data.acl.map( name => name == "open" ? "*" : name ),
-        did: uuidStr,
-        size: info.data.file_size,
-        hashes: {
-          md5: info.data.md5sum
-        },
-        ... metaSuper
-      };
-      return buildIndexdRecord(record);
-    }    
-  );
 }
 
 /**
@@ -96,7 +64,7 @@ function fetchCurrentRecord(uuidStr, metaSuper) {
  * @param {string} uuidStr 
  * @return {object} filter
  */
-function buildLegacyFilter(uuidStr) {
+function buildQueryFilter(uuidStr) {
   return {
     filters: {
       content: {
@@ -109,6 +77,76 @@ function buildLegacyFilter(uuidStr) {
   };
 }
 
+const retryBackoff = [ 2000, 4000, 8000, 16000 ];
+
+/**
+ * Wrapper around fetch - retries call on 429 status
+ * up to 4 times with exponential backoff
+ * 
+ * @param {string} urlStr 
+ * @param {*} opts 
+ */
+async function fetchJsonRetry(urlStr, opts) {
+  var retryCount = 0;
+  
+  async function doRequest()  {
+    return fetch(urlStr, opts
+    ).then( 
+      (res) => {
+        if ( res.status == 429 && retryCount < retryBackoff.length ) { // throttling from server 
+          return new Promise(function(resolve, reject){
+            // sleep and try again ...
+            const sleepMs = retryBackoff[retryCount] + Math.floor(Math.random()*2000);
+            retryCount += 1;
+            logLevel > 1 && console.log('throttling from server, sleeping ' + sleepMs);
+            setTimeout(function(){
+              resolve('ok');
+              logLevel > 5 && console.log('Retrying urlStr');
+            }, sleepMs);
+          }).then(doRequest);
+        }
+        if( res.status !== 200 ) { 
+          return Promise.reject('failed fetch, got ' + res.status + ' on ' + urlStr);
+        }
+        return res.json();
+      }
+    );
+  }
+
+  return doRequest();
+}
+
+/**
+ * Try to find the record in the "current" GDC file info index
+ * @param {string} uuidStr
+ * @param {IndexdMeta} metaSuper optional supplemental metadata
+ *      to merge into the result
+ * @return Promise<IndexdMeta> indexd metadata record constructed
+ *      by overlaying meta from the server onto metaSuper 
+ */
+function fetchCurrentRecord(uuidStr, metaSuper) {
+  const urlStr = gdcUrlBase + '/files/' + uuidStr;
+  
+  return fetchJsonRetry(urlStr
+  ).then(
+    function(info) {
+      logLevel > 5 && console.log('fetchCurrentRecord got: ' + JSON.stringify(info, null, 4));
+      const record = {
+        acl: info.data.acl.map( name => name == "open" ? "*" : name ),
+        did: uuidStr,
+        size: info.data.file_size,
+        //file_name: info.data.file_name,
+        hashes: {
+          md5: info.data.md5sum
+        },
+        ... metaSuper
+      };
+      return buildIndexdRecord(record);
+    }    
+  );
+}
+
+
 /**
  * Try to find the record in the legacy GDC file info index
  * @param {string} uuidStr 
@@ -120,22 +158,15 @@ function buildLegacyFilter(uuidStr) {
  */
 async function fetchLegacyRecord(uuidStr, metaSuper) {
   const urlStr = gdcUrlBase + '/legacy/files/' + uuidStr;
-  return fetch(urlStr
-    ).then( 
-      (res) => {
-        if( res.status !== 200 ) { 
-          return Promise.reject( 'failed fetch, got ' + res.status + ' on ' + urlStr);
-        }
-        return res.json();
-      }
+  return fetchJsonRetry(urlStr
     ).then(
       function(info) {
-        console.log("fetchLegacyRecord got: " + JSON.stringify(info));
+        logLevel > 5 && console.log("fetchLegacyRecord got: " + JSON.stringify(info, null, 4));
         const record = {
           acl: info.data.acl.map( name => name == "open" ? "*" : name ),
           did: uuidStr,
           size: info.data.file_size,
-          file_name: info.data.file_name,
+          //file_name: info.data.file_name,
           hashes: {
             md5: info.data.md5sum
           },
@@ -152,40 +183,36 @@ async function fetchLegacyRecord(uuidStr, metaSuper) {
  * @param {string} uuidStr
  * @param {IndexdMeta} metaSuper optional supplemental metadata
  *      to merge into the result
+ * @param {boolean} legacyApi whether to use legacyApi or currentApi endpoints
  * @return Promise<IndexdMeta> indexd metadata record constructed
  *      by overlaying meta from the server onto metaSuper 
  */
-async function fetchLegacyIndexRecord(uuidStr, metaSuper) {
-  const urlStr = gdcUrlBase + '/legacy/files/'; // + uuidStr;
-  const filterStr = JSON.stringify(buildLegacyFilter(uuidStr));
+async function fetchIndexRecord(uuidStr, metaSuper, legacyApi=false) {
+  const urlStr = gdcUrlBase + (legacyApi ? '/legacy' : '') + '/files/'; // + uuidStr;
+
   
-  return fetch(urlStr,
+  const filterStr = JSON.stringify(buildQueryFilter(uuidStr), null, 4);
+  
+  return fetchJsonRetry(urlStr,
       {
         method: 'POST',
         body: filterStr,
         headers: {
           'content-type': 'application/json'
         }
-      }
-    ).then( 
-      (res) => {
-        if( res.status !== 200 ) {
-          return Promise.reject( 'failed fetch, got ' + res.status + ' on ' + urlStr);
-        }
-        return res.json();
       } 
     ).then(
       function(info) {
-        console.log('fetchLegacyIndexRecord got: ' + JSON.stringify(info));
+        logLevel > 5 && console.log('fetchIndexRecord(legacy=' + (!!legacyApi) + ') got: ' + JSON.stringify(info, null, 4));
         if ( (!info.data) || (!info.data.hits) || info.data.hits.length !== 1 || info.data.hits[0].index_files.length !== 1 ) {
-          return Promise.reject('fetchLegacyIndexRecord did not have exactly 1 hit, had: ' + info.data.hits.length);
+          return Promise.reject('fetchIndexRecord(legacy=' + (!!legacyApi) + ') did not have exactly 1 hit, had: ' + info.data.hits.length);
         }
         //return info;
         const record = {
           acl: info.data.hits[0].acl.map( name => name == "open" ? "*" : name ),
           did: uuidStr,
           size: info.data.hits[0].index_files[0].file_size,
-          file_name: info.data.hits[0].index_files[0].file_name,
+          //file_name: info.data.hits[0].index_files[0].file_name,
           hashes: {
             md5: info.data.hits[0].index_files[0].md5sum
           },
@@ -194,31 +221,6 @@ async function fetchLegacyIndexRecord(uuidStr, metaSuper) {
         return buildIndexdRecord(record);
       }    
     );
-}
-
-
-/**
- * Log the given record to the default output folder
- */
-async function saveRecord(record) {
-  const uuidStr = record.did;
-  const jsonStr = JSON.stringify(record);
-  const savePath = outputFolder + '/' + uuidStr + '.json';
-  console.log(`Saving record: ${jsonStr} to ${savePath}\n`);
-  return record;
-}
-
-/**
- * Log the given record to the default error folder
- * @param {} record 
- * @param {*} uuidStr 
- */
-async function saveError(record) {
-  const uuidStr = record.did;
-  const jsonStr = JSON.stringify(record);
-  const savePath = outputFolder + '/errors/' + uuidStr + '.json';
-  console.log(`ERROR: Saving record: ${jsonStr} to ${savePath}\n`);
-  return record;
 }
 
 
@@ -241,9 +243,13 @@ async function fetchGdcRecord(uuidStr, metaSuper={}) {
       return fetchLegacyRecord(uuidStr, metaSuper).catch(
         function(err2) { // last try
           //console.log('fetchLegacyRecord failed', err);
-          return fetchLegacyIndexRecord(uuidStr, metaSuper).catch(
+          return fetchIndexRecord(uuidStr, metaSuper, false).catch(
             function(err3) {
-              return Promise.reject([err1, err2, err3].map(err => typeof err === "string" ? err : "" + err));
+              return fetchIndexRecord(uuidStr, metaSuper, true).catch(
+                function(err4) {
+                  return Promise.reject([err1, err2, err3, err4].map(err => typeof err === "string" ? err : "" + err));
+                }
+              );
             }
           )
         }
@@ -259,31 +265,79 @@ async function fetchGdcRecord(uuidStr, metaSuper={}) {
  * @param {string} uuidStr
  * @param {IndexdMeta} metaSuper optional supplemental metadata
  *      to merge into the result
+ * @param {string} outputFolder
  * @reutrn {Promise} that always succeeds 
  */
-async function fetchAndProcessRecord(uuidStr, metaSuper) {
+async function fetchAndProcessRecord(uuidStr, metaSuper, outputFolder) {
   return fetchGdcRecord(uuidStr, metaSuper).then(
     function(info) {
-      return saveRecord(info);
+      return saveRecord(info, outputFolder);
     }
   ).catch(
     function(err) { // ugh - log error
-      return saveError({ did: uuidStr, error: err });
+      return saveError({ did: uuidStr, error: err, ...metaSuper }, outputFolder);
     }
   );  
 }
 
-async function main() {
-  await a_mkdirp(outputFolder + '/errors');
-  const recordList = [
-    //'fdde0200-8912-4c8d-87b3-1bb3248acbed', // https://api.gdc.cancer.gov/legacy/files/fdde0200-8912-4c8d-87b3-1bb3248acbed
-    '51d416e5-bae8-4a1e-a849-f99131febe10',   // POST /legacy/files/
-    //'ffa1d254-3cb6-4ee1-a1a5-52482637a43d',  // GET /legacy/files/id
-    //'01de7763-a374-43e3-9965-6c577394c306',  // GET /files/id
-  ];
-  
-  // Process records asynchronously in chunks of 10
-  const chunkSize = 10;
+/**
+ * Log the given record to the default output folder
+ */
+async function saveRecord(record, outputFolder=defaultOutputFolder) {
+  if (!record.did) { throw new Error('Invalid record', record); }
+  const uuidStr = record.did;
+  const jsonStr = JSON.stringify(record, null, 4);
+  const savePath = outputFolder + '/' + uuidStr + '.json';
+  logLevel > 1 && console.log(`Saving record: ${jsonStr} to ${savePath}\n`);
+  await writeFile(savePath, jsonStr);
+  return record;
+}
+
+/**
+ * Log the given record to the default error folder
+ * @param {} record 
+ * @param {*} uuidStr 
+ */
+async function saveError(record, outputFolder=defaultOutputFolder) {
+  const uuidStr = record.did;
+  const jsonStr = JSON.stringify(record, null, 4);
+  const savePath = outputFolder + '/errors/' + uuidStr + '.json';
+  logLevel > 0 && console.log(`ERROR: Saving record: ${jsonStr} to ${savePath}\n`);
+  await writeFile(savePath, jsonStr);
+  return record;
+}
+
+/**
+ * Promisfy fs.writeFile ...
+ * #
+ * @param {string} pathStr 
+ * @param {string} dataStr 
+ */
+async function writeFile(pathStr, dataStr) {
+  return new Promise(function(resolve, reject) {
+    fs.writeFile(pathStr, dataStr, 'utf8', 
+      function(err) {
+        if (err) {
+          logLevel > 0 && console.log('Failed to save ' + pathStr, err);
+          reject(err); 
+          return; 
+        }
+        resolve('ok');
+      }
+    );
+  });
+}
+
+
+/**
+ * Process each record in recordList via async function thunk
+ * running chunkSize processes in parllel
+ * 
+ * @param {Array} recordList 
+ * @param {int} chunkSize 
+ * @param {async function} thunk 
+ */
+async function chunkForEach(recordList, chunkSize, thunk) {
   const chunkList = recordList.reduce(
     function(acc, record) {
       if (acc.length < 1 || acc[acc.length -1 ].length >= chunkSize) {
@@ -297,20 +351,130 @@ async function main() {
   
   return chunkList.reduce(
     function(lastChunk, chunk) {
-      let result = lastChunk.then(
+      return lastChunk.then(
         // wait for the last chunk to finish before processing this chunk
         async function() {
-          const promiseList = chunk.map(
-              function(recordId) {
-                return fetchAndProcessRecord(recordId, {urls: [ 'frickjack/bla' ]});
-              }
-            );
+          const promiseList = chunk.map(thunk);
           return Promise.all(promiseList);
         }
       );
-      return result;
     }, Promise.resolve('ok')
   );
+}
+
+async function test() {
+  const outputFolder = './data-out/test';
+  await a_mkdirp(outputFolder + '/errors');
+  const recordList = [
+    'fdde0200-8912-4c8d-87b3-1bb3248acbed',  // https://api.gdc.cancer.gov/legacy/files/fdde0200-8912-4c8d-87b3-1bb3248acbed
+    '51d416e5-bae8-4a1e-a849-f99131febe10',  // POST /legacy/files/
+    'ffa1d254-3cb6-4ee1-a1a5-52482637a43d',  // GET /legacy/files/id
+    '01de7763-a374-43e3-9965-6c577394c306',  // GET /files/id
+    '01263a92-ccf8-4d12-a2e3-0fa4ed3de5ba',  // POST /files/
+    '01de7763-a374-43e3-9965-6c577394cXXX',  // bogus id
+  ];
+
+  return chunkForEach(recordList, 10, 
+    function(recordId) {
+      return fetchAndProcessRecord(recordId, {urls: [ 'frickjack/bla' ]}, outputFolder);
+    }
+  );
+}
+
+/**
+ * Process a TSV of form: id\t object-path
+ * @param {string} inputPath 
+ */
+async function processTsvId2Path(inputPath, outputFolder) {
+  await a_mkdirp(outputFolder + '/errors');
+  
+  return new Promise(
+    function(resolve, reject) {
+      fs.readFile(inputPath, 'utf8', function(err, data) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    }
+  ).then(
+    function(data) {
+      //console.log('Got data: ' + data );
+      const recordList = data.split(/[\r\n]+/).map(
+        function(line) {
+          const columns = line.split(/\s+/);
+          if( columns.length == 2 ) {
+            return { did: columns[0], urls: [ columns[1] ] };
+          } else {
+            console.log('WARNING: ignoring badly formatted file line: ' + line);
+            return null;
+          }
+        }
+      ).filter(rec => !!rec);
+      return chunkForEach(recordList, 10, 
+                async function(rec){ return fetchAndProcessRecord(rec.did, rec, outputFolder); }
+              );
+    }
+  ).catch( 
+    function(err) {
+      console.log('Error!', err);
+      return Promise.reject(err);
+    }
+  );
+}
+
+async function processDcfCsvManifest(inputPath, outputFolder) {
+  await a_mkdirp(outputFolder + '/errors');
+  
+  return new Promise(
+    function(resolve, reject) {
+      fs.readFile(inputPath, 'utf8', function(err, data) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    }
+  ).then(
+    function(data) {
+      //console.log('Got data: ' + data );
+      const recordList = data.split(/[\r\n]+/).splice(1).map(
+        function(line) {
+          const columns = line.split(/[,\s]+/);
+          if( columns.length == 6 ) {
+            return { 
+              did: columns[0], 
+              urls: [ columns[1] ],
+              size: +columns[2],
+              hashes: {
+                md5: columns[4]
+              },
+              acl: columns[5].split(/[;\s]+/).filter(s => !!s).map(id => id === 'public' ? '*' : id)
+            };
+          } else {
+            console.log('WARNING: ignoring badly formatted file line: ' + line);
+            return null;
+          }
+        }
+      ).filter(rec => !!rec);
+      return chunkForEach(recordList, 10, 
+                async function(rec){ return saveRecord(buildIndexRecord(rec), outputFolder); }
+              );
+    }
+  ).catch( 
+    function(err) {
+      console.log('Error!', err);
+      return Promise.reject(err);
+    }
+  );
+}
+
+async function main() {
+  await test();
+  //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
+  //return processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
 }
 
 main();
