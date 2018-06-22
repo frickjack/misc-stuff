@@ -442,7 +442,8 @@ async function processDcfCsvManifest(inputPath, outputFolder) {
       //console.log('Got data: ' + data );
       const recordList = data.split(/[\r\n]+/).splice(1).map(
         function(line) {
-          const columns = line.split(/[,\s]+/);
+          // HACK! for one screwy record with a ',' in the object path - ugh
+          const columns = line.replace('G-292,_clone', 'G-292;_clone').split(/[,"\s]+/).map(s => s.replace('G-292;_clone', 'G-292,_clone'));
           if( columns.length == 6 ) {
             return { 
               did: columns[0], 
@@ -460,7 +461,7 @@ async function processDcfCsvManifest(inputPath, outputFolder) {
         }
       ).filter(rec => !!rec);
       return chunkForEach(recordList, 10, 
-                async function(rec){ return saveRecord(buildIndexRecord(rec), outputFolder); }
+                async function(rec){ return saveRecord(buildIndexdRecord(rec), outputFolder); }
               );
     }
   ).catch( 
@@ -474,7 +475,7 @@ async function processDcfCsvManifest(inputPath, outputFolder) {
 async function main() {
   await test();
   //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
-  //return processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
+  await processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
 }
 
 main();
