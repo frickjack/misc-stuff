@@ -15,7 +15,6 @@ build/
 develop-eggs/
 dist/
 eggs/
-lib/
 lib64/
 node_modules/
 parts/
@@ -70,3 +69,6 @@ settings.yaml
 *.sq3
 data-in/
 data-out/
+*.tar
+*.gz
+runlog.*
