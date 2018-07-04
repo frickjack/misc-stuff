@@ -3,7 +3,7 @@ const mkdirp = require('mkdirp');
 const readline = require('readline');
 var glob = require( 'glob' );  
 
-const logLevel = 3;
+const logLevel = 10;
 
 
 /**
@@ -103,7 +103,7 @@ async function chunkForEach(recordList, chunkSize, thunk) {
         // wait for the last chunk to finish before processing this chunk
         async function() {
           const promiseList = chunk.map(thunk);
-          return Promise.all(promiseList);
+          return Promise.all(promiseList); // becomes lastChunk 
         }
       );
     }, Promise.resolve('ok')

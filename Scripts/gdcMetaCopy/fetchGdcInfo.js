@@ -19,7 +19,7 @@ const defaultOutputFolder = './data-out';
  * @reutrn {Promise} that always succeeds 
  */
 async function fetchAndProcessRecord(uuidStr, metaSuper, outputFolder, gdcCache) {
-  return gdcHelper.fetchGdcRecord(uuidStr, metaSuper, gdcCache).then(
+  return gdcHelper.fetchGdcRecordCacheOnly(uuidStr, metaSuper, gdcCache).then(
     function(info) {
       return saveRecord(info, outputFolder);
     }
@@ -38,7 +38,7 @@ async function saveRecord(record, outputFolder=defaultOutputFolder) {
   const uuidStr = record.did;
   const jsonStr = JSON.stringify(record, null, 4);
   const savePath = outputFolder + '/' + uuidStr + '.json';
-  logLevel > 1 && console.log(`Saving record: ${jsonStr} to ${savePath}\n`);
+  logLevel > 12 && console.log(`Saving record: ${jsonStr} to ${savePath}\n`);
   await utils.writeFile(savePath, jsonStr);
   return record;
 }
@@ -160,33 +160,9 @@ async function processDcfCsvManifest(inputPath, outputFolder) {
 
 
 /**
- * Given a manifest listing a series of s3://bucket/... paths with
- * an embedded gdc uuid id in the path, fill an output folder
- * with .json files ready to post to an indexd index.
- * 
- * @param {string} inputPath to manifest file
- * @param {string} outputFolder 
- * @param {id:info} gdcCache cache
+ * Read the AWS S3 .manifest.csv file
  */
-async function processS3Manifest(inputPath, outputFolder, gdcCache) {
-  console.log(`Creating ${outputFolder}`);
-  gdcCache = gdcCache || {};
-  await utils.mkdirpPromise(outputFolder + '/errors');
-  const outputBucketExists = {};
-  
-  // get the set of ids that have already been processed
-  const alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
-    .then(
-      function(files) {
-        return files.map(path => utils.extractIdFromPath(path))
-          .reduce(function(acc,it) {
-            acc[it] = true;
-            return acc;
-          }, {});
-      }
-    );
-
-  console.log(`Loaded output folder glob: ${outputFolder}`);
+async function readS3Manifest(inputPath) {
   return utils.readFile(inputPath)
     .then(
       function(data) {
@@ -202,43 +178,104 @@ async function processS3Manifest(inputPath, outputFolder, gdcCache) {
             }
             return undefined;
           }
-        ).filter(
-          rec => {
-            return (!!rec) && (!alreadyProcessed[rec.did]);
-          }
         );
-        console.log(`Loading unprocessed records: ${recordList.length}`);
-        let progressCount = 0;
-        return utils.chunkForEach(recordList, 10, 
-          async function(rec){ 
-            // pick a time-based output bucket
-            const outputBucketPath = outputFolder + '/' + (Math.floor(Date.now() / (1000*60*10)) % 100);
-            let mkBucketPromise = outputBucketExists[ outputBucketPath ];
-            if (!mkBucketPromise) {
-              mkBucketPromise = utils.mkdirpPromise(outputBucketPath + '/errors');
-              outputBucketExists[ outputBucketPath ] = mkBucketPromise;
-            }
-            return mkBucketPromise.then(
-              function() {
-                fetchAndProcessRecord(rec.did, rec, outputBucketPath, gdcCache).then(
-                  function() {
-                    progressCount += 1;
-                    if (0 == progressCount % 500) {
-                      console.log('Progress: ' + progressCount + ' records');
-                    }
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-    ).catch( 
-      function(err) {
-        console.log('Error!', err);
-        return Promise.reject(err);
+        return recordList;
       }
     );
+}
+
+/**
+ * Given a manifest listing a series of s3://bucket/... paths with
+ * an embedded gdc uuid id in the path, fill an output folder
+ * with .json files ready to post to an indexd index.
+ * 
+ * @param {Array<{did,urls}>} recordList unprocessed records from manifest file
+ * @param {string} outputFolder 
+ * @param {id:info} gdcCache cache
+ */
+async function loadS3Manifest(recordList, outputFolder, gdcCache) {
+  console.log(`Creating ${outputFolder}`);
+  gdcCache = gdcCache || {};
+  await utils.mkdirpPromise(outputFolder + '/errors');
+  const outputBucketExists = {};
+
+  console.log(`Loading unprocessed records: ${recordList.length}`);
+  let progressCount = 0;
+  return utils.chunkForEach(recordList, 10, 
+    async function(rec){ 
+      // pick a time-based output bucket
+      const outputBucketPath = outputFolder + '/' + (Math.floor(Date.now() / (1000*60*10)) % 100);
+      let mkBucketPromise = outputBucketExists[ outputBucketPath ];
+      if (!mkBucketPromise) {
+        mkBucketPromise = utils.mkdirpPromise(outputBucketPath + '/errors');
+        outputBucketExists[ outputBucketPath ] = mkBucketPromise;
+      }
+      return mkBucketPromise.then(
+        function() {
+          return fetchAndProcessRecord(rec.did, rec, outputBucketPath, gdcCache).then(
+            function() {
+              progressCount += 1;
+              if (0 == progressCount % 500) {
+                console.log('Progress: ' + progressCount + ' records');
+              }
+              return null;
+            }
+          );
+        }
+      );
+    }
+  );
+}
+
+/**
+ * Load the json file associated with the given recordList,
+ * and post it to indexd
+ * 
+ * @param {Array<{did,jsonPath}>} recordList unprocessed records from manifest file
+ * @param {string} outputFolder 
+ * @param {string} indexdUrl
+ */
+async function pushS3Manifest(recordList, outputFolder, indexdHost, indexdCreds) {
+  console.log(`Creating ${outputFolder}`);
+  await utils.mkdirpPromise(outputFolder + '/errors');
+  const outputBucketExists = {};
+  console.log(`Pushing unprocessed records: ${recordList.length}`);
+  let progressCount = 0;
+  return utils.chunkForEach(recordList, 10, 
+    async function (rec) { 
+      // pick a time-based output bucket
+      const outputBucketPath = outputFolder + '/' + (Math.floor(Date.now() / (1000*60*10)) % 100);
+      let mkBucketPromise = outputBucketExists[ outputBucketPath ];
+      if (!mkBucketPromise) {
+        mkBucketPromise = utils.mkdirpPromise(outputBucketPath + '/errors');
+        outputBucketExists[ outputBucketPath ] = mkBucketPromise;
+      }
+      return mkBucketPromise.then(
+        function() {
+          return utils.readFile(rec.jsonPath);
+        }
+      ).then(
+        function (dataStr) {
+          const data = JSON.parse(dataStr);
+          return gdcHelper.postToIndexd(indexdHost, indexdCreds, data).then(
+            () => data
+          );
+        }
+      ).then(
+        function(info) {
+          progressCount += 1;
+          if (0 == progressCount % 500) {
+            console.log('Progress: ' + progressCount + ' records');
+          }
+          return saveRecord(info, outputBucketPath);
+        }
+      ).catch(
+        function(err) { // ugh - log error
+          return saveError({ error: err, ...rec }, outputBucketPath);
+        }
+      );    
+    }
+  );
 }
 
 async function loadGdcCache() {
@@ -278,8 +315,6 @@ async function loadGdcCache() {
 
 async function main() {
   //await test();
-  const gdcCache = await loadGdcCache();
-  console.log(`gdc cache loaded`);
   //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
   //await processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
   
@@ -288,12 +323,90 @@ async function main() {
     return;
   }
   const bucketName = process.argv[2];
-  await processS3Manifest(
-    defaultInputFolder + '/' + bucketName + '.manifest.csv',
-    defaultOutputFolder + '/' + bucketName,
-    gdcCache
+  const outputFolder =  defaultOutputFolder + '/' + bucketName;
+
+  // get the set of ids that have already been processed
+  // glob is a memory pig
+  const inputPath = defaultInputFolder + '/' + bucketName + '.manifest.csv';
+  let alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
+  .then(
+    function(files) {
+      return files.map(
+        function (path) {
+          return { id: utils.extractIdFromPath(path), path };
+        }
+      ).reduce(function(acc,it) {
+          if (it.id) {
+            acc[it.id] = it.path;
+          }
+          return acc;
+        }, {});
+    }
   );
   
+  console.log(`Loaded output folder glob: ${outputFolder}`);
+
+  if (false) { // generate json record on local fs
+    const recordList = await readS3Manifest(inputPath)
+    .then(
+      function(manifestList) {
+        return manifestList.filter(
+          rec => {
+            return (!!rec) && (!alreadyProcessed[rec.did]);
+          }
+        );
+      }
+    ).catch( 
+      function(err) {
+        console.log('Error!', err);
+        return Promise.reject(err);
+      }
+    );
+    // allow garbage collection 
+    alreadyProcessed = undefined;
+
+    const gdcCache = await loadGdcCache();
+    console.log(`gdc cache loaded`);
+
+    await loadS3Manifest(
+      recordList,
+      gdcCache
+    );
+  }
+  
+  if (true) {
+    const recordList = await readS3Manifest(inputPath)
+    .then(
+      function(manifestList) {
+        return manifestList.map(
+          rec => {
+            if ((!!rec) && alreadyProcessed[rec.did]) {
+              const jsonPath = alreadyProcessed[rec.did];
+              if (jsonPath.indexOf('/errors/') < 0) {
+                // process manifest entries with a generated
+                // .json record that is not an error
+                return {
+                  jsonPath: alreadyProcessed[rec.did],
+                  did: rec.did
+                };
+              }
+            }
+            return false;
+          }
+        ).filter(rec => !!rec);
+      }
+    ).catch( 
+      function(err) {
+        console.log('Error!', err);
+        return Promise.reject(err);
+      }
+    );
+    // allow garbage collection 
+    alreadyProcessed = undefined;
+    const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; //
+    const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
+    pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
+  }
 }
 
 main();

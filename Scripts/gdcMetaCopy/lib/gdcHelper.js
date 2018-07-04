@@ -11,6 +11,7 @@ const agent = new https.Agent({
 });
 
 
+
 /**
  * Build index record
  * @param {object} meta object to validate with { acl, did, file_name, hashes.md5, size, urls }
@@ -79,26 +80,35 @@ const retryBackoff = [ 2000, 4000, 8000, 16000 ];
  * @param {*} opts 
  */
 async function fetchJsonRetry(urlStr, opts) {
-  let retryCount = 0;
-  async function doRetry() {
+  var retryCount = 0;
+  async function doRetry(reason) {
     return new Promise(function(resolve, reject){
       // sleep and try again ...
-      const sleepMs = retryBackoff[retryCount] + Math.floor(Math.random()*2000);
-      retryCount += 1;
-      logLevel > 1 && console.log('throttling from server, sleeping ' + sleepMs);
+      const retryIndex = retryCount < retryBackoff.length - 1 ? retryCount : retryBackoff.length - 1;
+      const sleepMs = retryBackoff[retryIndex] + Math.floor(Math.random()*2000);
+      if (retryCount < retryBackoff.length) {
+        retryCount += 1;
+      }
+      logLevel > 1 && console.log('failed fetch ' + reason + ', sleeping ' + sleepMs + ' then retry ' + urlStr);
       setTimeout(function(){
         resolve('ok');
-        logLevel > 5 && console.log('Retrying urlStr');
+        logLevel > 5 && console.log(`Retrying ${urlStr} after sleep - ${retryCount}`);
       }, sleepMs);
     }).then(doRequest);
   }
 
   async function doRequest()  {
+    if (retryCount > 0) {
+      console.log(`Re-fetching ${urlStr} - retry no ${retryCount}`);
+    }
     return fetch(urlStr, { agent, ...opts }
     ).then( 
       (res) => {
         if ( res.status == 429 && retryCount < retryBackoff.length ) { // throttling from server 
-          return doRetry();        
+          return doRetry('throttling from server');        
+        }
+        if (retryCount > 0) {
+          console.log(`No more retries for ${urlStr} - retry count ${retryCount}, status ${res.status}`);
         }
         if( res.status !== 200 ) { 
           return Promise.reject('failed fetch, got ' + res.status + ' on ' + urlStr);
@@ -107,7 +117,7 @@ async function fetchJsonRetry(urlStr, opts) {
       },
       (err) => {
         if (retryCount < retryBackoff.length) {
-          return doRetry();
+          return doRetry(err);
         }
         return Promise.reject(err);
       }
@@ -265,6 +275,34 @@ async function fetchGdcRecord(uuidStr, metaSuper={}, gdcCache={}) {
   );
 }
 
+/**
+ * Same as fetchGdcRecord, but does not make calls
+ * for data that should be in the cache ...
+ * 
+ * @param {string} uuidStr 
+ * @param {IndexdMeta} metaSuper optional supplemental metadata
+ *      to merge into the result
+ * @param {key:info} gdcCache of already loaded info to avoid network requests
+ * @return Promise<IndexdMeta> indexd metadata record constructed
+ *      by overlaying meta from the server onto metaSuper
+ * @throws Promise.reject( [err1, err2, ...]) chain of errors before finally gave up 
+ */
+async function fetchGdcRecordCacheOnly(uuidStr, metaSuper={}, gdcCache={}) {
+  if (gdcCache[uuidStr]) {
+    let cacheEntry = gdcCache[uuidStr];
+    let rec = buildIndexdRecord({ ...cacheEntry, ...metaSuper });
+    return Promise.resolve(rec);
+  }
+  return fetchIndexRecord(uuidStr, metaSuper, false).catch(
+    function(err3) {
+      return fetchIndexRecord(uuidStr, metaSuper, true).catch(
+        function(err4) {
+          return Promise.reject([err3, err4].map(err => typeof err === "string" ? err : "" + err));
+        }
+      );
+    }
+  );
+}
 
 /**
  * Handle paginated fetch
@@ -313,8 +351,24 @@ async function fetchGdcIndex() {
   );
 }
 
+async function postToIndexd(hostName, credsStr, data) {
+  const urlStr = `https://${hostName}/index/index/`;
+  return fetchJsonRetry(urlStr,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': `Basic ${credsStr}`
+      }
+    } 
+  );
+}
+
 module.exports = {
   fetchGdcRecord,
+  fetchGdcRecordCacheOnly,
   buildIndexdRecord,
-  fetchGdcIndex
+  fetchGdcIndex,
+  postToIndexd
 };
