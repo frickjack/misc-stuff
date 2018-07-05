@@ -370,6 +370,7 @@ async function main() {
 
     await loadS3Manifest(
       recordList,
+      outputFolder,
       gdcCache
     );
   }
@@ -405,8 +406,12 @@ async function main() {
     alreadyProcessed = undefined;
     const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
     const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
-    pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
+    await pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
   }
 }
+
+module.exports = {
+  loadGdcCache
+};
 
 main();
