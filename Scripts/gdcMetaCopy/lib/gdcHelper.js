@@ -352,16 +352,54 @@ async function fetchGdcIndex() {
 }
 
 async function postToIndexd(hostName, credsStr, data) {
-  const urlStr = `https://${hostName}/index/index/`;
-  return fetchJsonRetry(urlStr,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: {
-        'content-type': 'application/json',
-        'Authorization': `Basic ${credsStr}`
+  const urlBase = `https://${hostName}/index/`;
+  // first - check if a record already exists to update
+  return fetchJsonRetry(urlBase + data.did).then(
+    function(oldRec){ // old record exists - update if necessary
+      const urlIndex = oldRec.urls.reduce(
+        function(acc,it) {
+          acc[it] = true;
+          return acc;
+        }, {}
+      );
+      // if some new url is not already indexed, then update
+      if (data.urls.find(it => !urlIndex[it])) {
+        data.urls.reduce(
+          function(acc,it) {
+            acc[it] = true;
+          }, urlIndex
+        );
+        const urlList = Object.keys(urlIndex);
+        const updateRec = {
+          acl: data.acl,
+          urls: urlList
+        };
+        return fetchJsonRetry(urlBase + 'index/' + data.did + '?rev=' + oldRec.rev,
+          {
+            method: 'PUT',
+            body: JSON.stringify(updateRec),
+            headers: {
+              'content-type': 'application/json',
+              'Authorization': `Basic ${credsStr}`
+            }
+          } 
+        );
+      } else {
+        return Promise.resolve(oldRec);
       }
-    } 
+    },
+    function(){ // no existing record?
+      return fetchJsonRetry(urlBase + 'index/',
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: {
+            'content-type': 'application/json',
+            'Authorization': `Basic ${credsStr}`
+          }
+        } 
+      );
+    }
   );
 }
 

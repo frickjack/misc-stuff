@@ -403,7 +403,7 @@ async function main() {
     );
     // allow garbage collection 
     alreadyProcessed = undefined;
-    const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; //
+    const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
     const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
     pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
   }
