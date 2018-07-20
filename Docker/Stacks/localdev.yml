@@ -9,7 +9,7 @@ services:
       - "dbdata:/var/lib/postgresql/data"
       - "/home:/mnt/Users"
     env_file:
-      - postgres.env
+      - localdev/postgres.env
     deploy:
       replicas: 1
       restart_policy:
