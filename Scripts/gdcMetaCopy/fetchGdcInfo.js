@@ -19,7 +19,7 @@ const defaultOutputFolder = './data-out';
  * @reutrn {Promise} that always succeeds 
  */
 async function fetchAndProcessRecord(uuidStr, metaSuper, outputFolder, gdcCache) {
-  return gdcHelper.fetchGdcRecordCacheOnly(uuidStr, metaSuper, gdcCache).then(
+  return gdcHelper.fetchGdcRecord(uuidStr, metaSuper, gdcCache).then(
     function(info) {
       return saveRecord(info, outputFolder);
     }
@@ -313,21 +313,52 @@ async function loadGdcCache() {
   );
 }
 
+const manifestFolder = 'data-in/dcfAwsIndex20180727';
+const helpStr = `Use: node fetchGdcInfo.js command options
+where command is one of:
+    - test
+    - gen-recs bucketName
+        Generate indexd records given a manifest 
+        (${manifestFolder}/bucketName.cloud-manifest.csv) of form:
+             uuid, bucket-path, acl, md5, size
+        Writes generated records to ${defaultOutputFolder}/bucketName
+    - post-recs bucketName [index-password (default from INDEX_PASSWORD environment)]
+         Post the records under ${defaultOutputFolder}/bucketName 
+         to nci-crdc.datacommons.io
+         using the given indexd password.
+         Merges the url lists if a record already exists in indexd.
+    - merge-manifest bucketName
+         Build a cloud manifest that merges 
+         * bucket-manifest at ${manifestFolder}/bucketName.manifest.csv with each line of form: bucket-path
+         * gdc-manifest from ${defaultInputFolder}/gdcRelease11/*.tsv with each line of form: id fielname md5 size state
+         Generates output:
+         * id bucket-path acl md5 size state
+         Where acl is derived from the bucket-name:
+            x ccle-open-access -> "public"
+            x target-open -> "public"
+            x target-controlled -> "phs000218"
+            x tcga-controlled -> "phs000178"
+            x tcga-open -> "public"
+`;
+
 async function main() {
   //await test();
   //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
   //await processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
   
-  if (process.argv.length < 3) {
-    console.log("Use: node bla.js bucket-name");
+  
+  if (process.argv.length < 4) {
+    console.log(helpStr);
     return;
   }
-  const bucketName = process.argv[2];
-  const outputFolder =  defaultOutputFolder + '/' + bucketName;
 
+  const command = process.argv[2];
+  const bucketName = process.argv[3];
+  const outputFolder =  defaultOutputFolder + '/' + bucketName;
   // get the set of ids that have already been processed
   // glob is a memory pig
-  const inputPath = defaultInputFolder + '/' + bucketName + '.manifest.csv';
+  const bucketManifest = manifestFolder + '/' + bucketName + '.manifest.tsv';
+  const cloudManifest = manifestFolder + '/' + bucketName + '.cloud-manifest.tsv';
   let alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
   .then(
     function(files) {
@@ -346,67 +377,81 @@ async function main() {
   
   console.log(`Loaded output folder glob: ${outputFolder}`);
 
-  if (false) { // generate json record on local fs
-    const recordList = await readS3Manifest(inputPath)
-    .then(
-      function(manifestList) {
-        return manifestList.filter(
-          rec => {
-            return (!!rec) && (!alreadyProcessed[rec.did]);
-          }
-        );
-      }
-    ).catch( 
-      function(err) {
-        console.log('Error!', err);
-        return Promise.reject(err);
-      }
-    );
-    // allow garbage collection 
-    alreadyProcessed = undefined;
 
-    const gdcCache = await loadGdcCache();
-    console.log(`gdc cache loaded`);
-
-    await loadS3Manifest(
-      recordList,
-      outputFolder,
-      gdcCache
-    );
-  }
-  
-  if (true) {
-    const recordList = await readS3Manifest(inputPath)
-    .then(
-      function(manifestList) {
-        return manifestList.map(
-          rec => {
-            if ((!!rec) && alreadyProcessed[rec.did]) {
-              const jsonPath = alreadyProcessed[rec.did];
-              if (jsonPath.indexOf('/errors/') < 0) {
-                // process manifest entries with a generated
-                // .json record that is not an error
-                return {
-                  jsonPath: alreadyProcessed[rec.did],
-                  did: rec.did
-                };
-              }
+  if (command === 'gen-recs' || command === 'post-recs') { // generate json record on local fs
+    if (command === 'gen-recs') { // generate json record on local fs
+      const recordList = await readS3Manifest(inputPath)
+      .then(
+        function(manifestList) {
+          return manifestList.filter(
+            rec => {
+              return (!!rec) && (!alreadyProcessed[rec.did]);
             }
-            return false;
-          }
-        ).filter(rec => !!rec);
-      }
-    ).catch( 
-      function(err) {
-        console.log('Error!', err);
-        return Promise.reject(err);
-      }
+          );
+        }
+      ).catch( 
+        function(err) {
+          console.log('Error!', err);
+          return Promise.reject(err);
+        }
+      );
+      // allow garbage collection 
+      alreadyProcessed = undefined;
+
+      const gdcCache = await loadGdcCache();
+      console.log(`gdc cache loaded`);
+
+      await loadS3Manifest(
+        recordList,
+        outputFolder,
+        gdcCache
+      );
+    } else if (command === 'post-recs') {
+      const recordList = await readS3Manifest(inputPath)
+      .then(
+        function(manifestList) {
+          return manifestList.map(
+            rec => {
+              if ((!!rec) && alreadyProcessed[rec.did]) {
+                const jsonPath = alreadyProcessed[rec.did];
+                if (jsonPath.indexOf('/errors/') < 0) {
+                  // process manifest entries with a generated
+                  // .json record that is not an error
+                  return {
+                    jsonPath: alreadyProcessed[rec.did],
+                    did: rec.did
+                  };
+                }
+              }
+              return false;
+            }
+          ).filter(rec => !!rec);
+        }
+      ).catch( 
+        function(err) {
+          console.log('Error!', err);
+          return Promise.reject(err);
+        }
+      );
+      // allow garbage collection 
+      alreadyProcessed = undefined;
+      const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
+      const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
+      await pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
+    } else {
+      console.log(helpStr);
+    }
+  } else if (command === 'merge-manifest') {
+    let path = await generateCloudManifest(
+      manifestFolder + '/' + bucketName + '.manifest.tsv',
+      [ 
+        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
+        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
+      ]
     );
-    // allow garbage collection 
-    alreadyProcessed = undefined;
-    const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
-    const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
-    await pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
+    console.log('Generated manifest: ' + path);
+  } else {
+    console.log(helpStr);
   }
 }
 

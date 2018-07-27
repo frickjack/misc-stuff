@@ -3,7 +3,7 @@ const mkdirp = require('mkdirp');
 const readline = require('readline');
 var glob = require( 'glob' );  
 
-const logLevel = 10;
+const logLevel = 5;
 
 
 /**
