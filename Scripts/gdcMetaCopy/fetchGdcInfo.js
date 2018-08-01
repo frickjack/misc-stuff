@@ -346,7 +346,15 @@ async function main() {
   //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
   //await processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
   
-  
+  const bucket2Acl = {
+    'ccle-open-access': 'public',
+    'target-open': 'public',
+    'target-controlled': 'phs000218',
+    'tcga-controlled': 'phs000178',
+    'tcga-open': 'public',
+    'cat-all-buckets': 'frickjack'
+  };
+
   if (process.argv.length < 4) {
     console.log(helpStr);
     return;
@@ -357,28 +365,32 @@ async function main() {
   const outputFolder =  defaultOutputFolder + '/' + bucketName;
   // get the set of ids that have already been processed
   // glob is a memory pig
-  const bucketManifest = manifestFolder + '/' + bucketName + '.manifest.tsv';
-  const cloudManifest = manifestFolder + '/' + bucketName + '.cloud-manifest.tsv';
-  let alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
-  .then(
-    function(files) {
-      return files.map(
-        function (path) {
-          return { id: utils.extractIdFromPath(path), path };
-        }
-      ).reduce(function(acc,it) {
-          if (it.id) {
-            acc[it.id] = it.path;
-          }
-          return acc;
-        }, {});
-    }
-  );
+  //const bucketManifest = manifestFolder + '/' + bucketName + '.manifest.tsv';
   
-  console.log(`Loaded output folder glob: ${outputFolder}`);
-
-
+  if (!bucket2Acl[bucketName]) {
+    console.log(`Invalid bucket name: ${bucketName}
+Available buckets: ${Object.keys(bucket2Acl).join(',')}
+`);
+    return;
+  }
   if (command === 'gen-recs' || command === 'post-recs') { // generate json record on local fs
+    let alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
+    .then(
+      function(files) {
+        return files.map(
+          function (path) {
+            return { id: utils.extractIdFromPath(path), path };
+          }
+        ).reduce(function(acc,it) {
+            if (it.id) {
+              acc[it.id] = it.path;
+            }
+            return acc;
+          }, {});
+      }
+    );    
+    console.log(`Loaded output folder glob: ${outputFolder}`);
+
     if (command === 'gen-recs') { // generate json record on local fs
       const recordList = await readS3Manifest(inputPath)
       .then(
@@ -442,14 +454,42 @@ async function main() {
       console.log(helpStr);
     }
   } else if (command === 'merge-manifest') {
-    let path = await generateCloudManifest(
+    const info = await gdcHelper.generateCloudManifest(
       manifestFolder + '/' + bucketName + '.manifest.tsv',
       [ 
         defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
         defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
-      ]
+      ],
+      bucketName,
+      [ bucket2Acl[ bucketName ] ]
     );
-    console.log('Generated manifest: ' + path);
+    const summary = {
+      recs: Object.values(info.bucketDb),
+      errors: info.errors
+    };
+    console.log(`
+Record count: ${summary.recs.length}
+Error count : ${summary.errors.length}
+`
+);
+    if (bucketName === 'cat-all-buckets') {
+      // Try to determine which gdc objects are not in the buckets
+      const gdcRecs = Object.values(info.gdcDb);
+      const bucketCount = Object.keys(info.bucketDb).length;
+      const missingRecs = gdcRecs.filter(rec => !info.bucketDb[rec.did]);
+      console.log(`
+GDC total records count  : ${gdcRecs.length}
+Total bucket keys count  : ${bucketCount}
+GDC missing records count: ${missingRecs.length}
+`);
+      const path = manifestFolder + '/gdcMissing.json';
+      console.log(`Writing ${path}`);
+      await utils.writeFile(path, JSON.stringify(missingRecs));
+    } else {
+      const path = manifestFolder + '/' + bucketName + '.cloud-manifest.json';
+      console.log(`Writing ${path}`);
+      await utils.writeFile(path, JSON.stringify(summary));
+    }  
   } else {
     console.log(helpStr);
   }

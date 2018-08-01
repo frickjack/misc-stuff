@@ -403,6 +403,7 @@ async function postToIndexd(hostName, credsStr, data) {
   );
 }
 
+
 /**
  * Combine manifests to get a unified manifest to upload to DCF.
  * Also generate error report detailing which records are in AWS
@@ -435,7 +436,7 @@ reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/dat
  * @param {*} gdcManifestFileList 
  * @param {*} aclList 
  */
-async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, aclList) {
+async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bucketName, aclList) {
   const bucketLineList = await (
     utils.readFile(bucketManifestFile).then(
       function(dataStr) { 
@@ -443,10 +444,22 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, ac
       }
     )
   );
-  const gdcColumns = []
-  const gdcDb = await (
-    Promise.all(
-      gdcManifestFileList.map(
+  
+  // paths in bucket that could not be parsed or overlap with the same id or whatever
+  const errors = [];
+  let gdcDupCount = 0;
+  function pushError(did, mess, details, reportToConsole) {
+    const err = {did, mess, details};
+    reportToConsole && console.log('ERROR! ' + JSON.stringify(err));
+    errors.push(err);
+  }
+
+  // Regex matches indexd did
+  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
+  // build id to record data from the gdc manifests
+  const gdcDb = await (async function() {
+    return Promise.all(
+      gdcManifestFileList.map( // read each file
         fileName => utils.readFile(fileName)
       )
     ).then( 
@@ -456,33 +469,121 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, ac
           content => content.split(/[\r\n]+/)
         ).reduce(
           // combine the 2 files' line lists into a single list
-          function(lineList, acc) {
-            acc.concat(lineList)
+          function(acc, lineList) {
+            return acc.concat(lineList)
           }, []
         ).map(
           // tokenize each line, and convert to an indexd record or null
           function(gdcLine) {
             const tokenList = gdcLine.split(/\t+/);
-            if (tokenList.length == 5 && tokenList[0].match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/)) {
+            if (tokenList.length == 5 && tokenList[0].match(rxId)) {
               // looks like a valid line
               return {
                 did: tokenList[0],
                 hashes: {
                   md5: tokenList[2]
                 },
-                size: +tokenList[4],
+                size: +tokenList[3],
                 fileName: tokenList[1],
-                acl: aclList
+                acl: aclList,
+                urls: []
               };
-            }
+            } 
+            console.log('Ignoring invalid gdc manifest line: ' + JSON.stringify(tokenList));
             return null;
           }
         ).reduce(
-          // 
-        )
+          // index the accumulated records by id
+          function(acc, rec) {
+            if (rec) { // filter out the null records
+              if (!acc[rec.did]) {
+                acc[rec.did] = rec;
+              } else {
+                gdcDupCount += 1;
+                // GDC says clinical/biospeciman XML files are on "both portals" :-p
+                //console.log(`duplicate gdc records: ${gdcDupCount}?`, [rec, acc[rec.did]]);
+              }
+            }
+            return acc;
+          }, 
+          {}
+        );
       }
-    )
-  );
+    );
+  })();
+
+  // build id to record data for the bucket we have a manifest of
+  try {
+    const bucketDb = await utils.readFile(bucketManifestFile
+    ).then(
+      function (content) {
+        return content.split(/[\r\n]+/ // split file into lines
+        ).map( // split each line into tokens
+          function(line){ return line.split(/\s+/); }
+        ).filter(  // only include valid looking data-file lines
+          function(tokenList){
+            let isOk = false;
+            if (
+              tokenList.length === 4 && 
+              +tokenList[2] > 0  // object size
+            ) {
+              isOk = !!tokenList[3].match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\/+[^\/]+$/); // object key (filename) matches id/filename
+              if (!isOk) {
+                // log error if pattern is not as expected
+                pushError('', 'invalid bucket manifest line', { tokenList });
+              }
+              // else - don't bother logging errors for prefix (non-object) entries in bucket manifest
+            }
+            return isOk;
+          }
+        ).map( // convert token list to indexd record
+          function(tokenList) {
+            const pathParts = tokenList[3].split(/\/+/);
+            return {
+              did: pathParts[0],
+              fileName: pathParts[1],
+              urls: [ 's3://' + bucketName + '/' + tokenList[3] ]
+            };
+          }
+        ).map( // augment with gdc metadata - discard, and log as error if not present in gdc
+          function(rec) {
+            const gdcInfo = gdcDb[rec.did];
+            let result = null;
+            if (gdcInfo) {
+              if (gdcInfo.fileName === rec.fileName) {
+                result = { ...gdcInfo, ...rec };
+              } else {
+                pushError(rec.did, 'Ignoring bucket entry with mismatch filename', [rec, gdcInfo]);
+              }
+            } else {
+              pushError(rec.did, 'Ugh, untracked bucket key!', rec);
+            }
+            return result;
+          }
+        ).reduce(
+          function(acc, it) {
+            if (it) {
+              if (acc[it.did]) {
+                pushError(it.did, 'Ugh, duplicate records!', [it, acc[it.did]], true);
+              } else {
+                acc[it.did] = it;
+              }
+            }
+            return acc;
+          }, {}
+        );
+      }
+    );
+    return {
+      gdcDb,
+      bucketDb,
+      errors
+    };  
+  } catch (err) {
+    console.log('Ugh!  Failed to build cloud-manifest: ' + JSON.stringify(err), err);
+    return Promise.reject(err);
+  }
+
 }
 
 module.exports = {

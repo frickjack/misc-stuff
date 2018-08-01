@@ -118,9 +118,11 @@ async function chunkForEach(recordList, chunkSize, thunk) {
  * @return {string} uuidStr or undefined if not found 
  */
 function extractIdFromPath(pathStr) {
+  const rxId = /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
+  // remove suffix, split path on '/', and find first uuid-looking token
   const id = pathStr.replace(/\.\w+$/, '').split(/\/+/g).find(
     function(token) {
-      return token.length === 36 && token.match(/\w\w\w\w\w\w\w\w-\w\w\w\w-\w\w\w\w-\w\w\w\w-\w\w\w\w\w\w\w\w\w\w\w\w/)
+      return token.length === 36 && token.match(rxId)
     }
   );
   return id;
