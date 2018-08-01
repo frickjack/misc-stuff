@@ -85,9 +85,9 @@ async function processTsvId2Path(inputPath, outputFolder) {
   await utils.mkdirpPromise(outputFolder + '/errors');
   
   return utils.readFile(inputPath).then(
-    function(data) {
-      //console.log('Got data: ' + data );
-      const recordList = data.split(/[\r\n]+/).map(
+    function(dataStr) {
+      //console.log('Got dataStr: ' + dataStr );
+      const recordList = dataStr.split(/[\r\n]+/).map(
         function(line) {
           const columns = line.split(/\s+/);
           if( columns.length == 2 ) {
@@ -113,20 +113,10 @@ async function processTsvId2Path(inputPath, outputFolder) {
 async function processDcfCsvManifest(inputPath, outputFolder) {
   await utils.mkdirpPromise(outputFolder + '/errors');
   
-  return new Promise(
-    function(resolve, reject) {
-      fs.readFile(inputPath, 'utf8', function(err, data) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(data);
-      });
-    }
-  ).then(
-    function(data) {
-      //console.log('Got data: ' + data );
-      const recordList = data.split(/[\r\n]+/).splice(1).map(
+  return utils.readFile(inputPath).then(
+    function(dataStr) {
+      //console.log('Got dataStr: ' + dataStr );
+      const recordList = dataStr.split(/[\r\n]+/).splice(1).map(
         function(line) {
           // HACK! for one screwy record with a ',' in the object path - ugh
           const columns = line.replace('G-292,_clone', 'G-292;_clone').split(/[,"\s]+/).map(s => s.replace('G-292;_clone', 'G-292,_clone'));
@@ -165,9 +155,9 @@ async function processDcfCsvManifest(inputPath, outputFolder) {
 async function readS3Manifest(inputPath) {
   return utils.readFile(inputPath)
     .then(
-      function(data) {
-        //console.log('Got data: ' + data );
-        const recordList = data.split(/[\r\n]+/).map(
+      function(dataStr) {
+        //console.log('Got dataStr: ' + dataStr );
+        const recordList = dataStr.split(/[\r\n]+/).map(
           function(line) {
             if (line.match(/s3:\/\/[^\/]+\/\S+$/)) {
               // looks like a valid S3 path - try to pick out the object id
@@ -257,9 +247,7 @@ async function pushS3Manifest(recordList, outputFolder, indexdHost, indexdCreds)
       ).then(
         function (dataStr) {
           const data = JSON.parse(dataStr);
-          return gdcHelper.postToIndexd(indexdHost, indexdCreds, data).then(
-            () => data
-          );
+          return gdcHelper.postToIndexd(indexdHost, indexdCreds, data);
         }
       ).then(
         function(info) {
@@ -314,7 +302,12 @@ async function loadGdcCache() {
 }
 
 const manifestFolder = 'data-in/dcfAwsIndex20180727';
-const helpStr = `Use: node fetchGdcInfo.js command options
+const helpStr = `Use: node fetchGdcInfo.js commandGroup command options
+where commandGroup is one of:
+    - current
+          Query GDC API for metadata for keys in the bucket manifest
+    - gdc11
+          Load the GDC Release 11 manifest for metadata
 where command is one of:
     - test
     - gen-recs bucketName
@@ -327,31 +320,20 @@ where command is one of:
          to nci-crdc.datacommons.io
          using the given indexd password.
          Merges the url lists if a record already exists in indexd.
-    - merge-manifest bucketName
-         Build a cloud manifest that merges 
-         * bucket-manifest at ${manifestFolder}/bucketName.manifest.csv with each line of form: bucket-path
-         * gdc-manifest from ${defaultInputFolder}/gdcRelease11/*.tsv with each line of form: id fielname md5 size state
-         Generates output:
-         * id bucket-path acl md5 size state
-         Where acl is derived from the bucket-name:
-            x ccle-open-access -> "public"
-            x target-open -> "public"
-            x target-controlled -> "phs000218"
-            x tcga-controlled -> "phs000178"
-            x tcga-open -> "public"
 `;
 
 async function main() {
+  // TODO - break main between commands
   //await test();
   //await processTsvId2Path(defaultInputFolder + '/TCGA_staging_data.tsv', defaultOutputFolder + '/TCGA_staging_data');
   //await processDcfCsvManifest(defaultInputFolder + '/manifest_for_DCF_20180613_update.csv', defaultOutputFolder + '/DCF_manifest_20180613');
   
   const bucket2Acl = {
-    'ccle-open-access': 'public',
-    'target-open': 'public',
+    'ccle-open-access': '*',
+    'target-open': '*',
     'target-controlled': 'phs000218',
     'tcga-controlled': 'phs000178',
-    'tcga-open': 'public',
+    'tcga-open': '*',
     'cat-all-buckets': 'frickjack'
   };
 
@@ -360,9 +342,13 @@ async function main() {
     return;
   }
 
-  const command = process.argv[2];
-  const bucketName = process.argv[3];
+  const commandGroup = process.argv[2];
+  const command = process.argv[3];
+  const bucketName = process.argv[4];
   const outputFolder =  defaultOutputFolder + '/' + bucketName;
+  const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
+  const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
+      
   // get the set of ids that have already been processed
   // glob is a memory pig
   //const bucketManifest = manifestFolder + '/' + bucketName + '.manifest.tsv';
@@ -373,7 +359,7 @@ Available buckets: ${Object.keys(bucket2Acl).join(',')}
 `);
     return;
   }
-  if (command === 'gen-recs' || command === 'post-recs') { // generate json record on local fs
+  if (commandGroup === 'current') { // generate json record on local fs
     let alreadyProcessed = await utils.globp(outputFolder + '/**/*.json')
     .then(
       function(files) {
@@ -447,49 +433,109 @@ Available buckets: ${Object.keys(bucket2Acl).join(',')}
       );
       // allow garbage collection 
       alreadyProcessed = undefined;
-      const indexdHost = 'nci-crdc.datacommons.io'; // 'reuben.planx-pla.net'; // 
-      const indexdCreds = Buffer.from('gdcapi:' + process.env.INDEX_PASSWORD).toString('base64');  
       await pushS3Manifest(recordList, outputFolder.replace(/\/+$/, '') + '_upload', indexdHost, indexdCreds);
     } else {
       console.log(helpStr);
     }
-  } else if (command === 'merge-manifest') {
-    const info = await gdcHelper.generateCloudManifest(
-      manifestFolder + '/' + bucketName + '.manifest.tsv',
-      [ 
-        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
-        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
-      ],
-      bucketName,
-      [ bucket2Acl[ bucketName ] ]
-    );
-    const summary = {
-      recs: Object.values(info.bucketDb),
-      errors: info.errors
-    };
-    console.log(`
-Record count: ${summary.recs.length}
-Error count : ${summary.errors.length}
-`
-);
-    if (bucketName === 'cat-all-buckets') {
-      // Try to determine which gdc objects are not in the buckets
-      const gdcRecs = Object.values(info.gdcDb);
-      const bucketCount = Object.keys(info.bucketDb).length;
-      const missingRecs = gdcRecs.filter(rec => !info.bucketDb[rec.did]);
+  } else if (commandGroup === 'gdc11') {
+    if (command === 'gen-recs') {
+      /*
+      Build a cloud manifest that merges 
+         * bucket-manifest at ${manifestFolder}/bucketName.manifest.csv with each line of form: bucket-path
+         * gdc-manifest from ${defaultInputFolder}/gdcRelease11/*.tsv with each line of form: id fielname md5 size state
+         Generates output:
+         * id bucket-path acl md5 size state
+         Where acl is derived from the bucket-name:
+            x ccle-open-access -> "public"
+            x target-open -> "public"
+            x target-controlled -> "phs000218"
+            x tcga-controlled -> "phs000178"
+            x tcga-open -> "public"
+      */
+      // build a .cloud-manifest. file by merging GDC manifest with AWS bucket manifest
+      // the .cloud-manifest. holds the json records ready to post to indexd
+      const info = await gdcHelper.generateCloudManifest(
+        manifestFolder + '/' + bucketName + '.manifest.tsv',
+        [ 
+          defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
+          defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
+        ],
+        bucketName,
+        [ bucket2Acl[ bucketName ] ]
+      );
+      const summary = {
+        recs: Object.values(info.bucketDb),
+        errors: info.errors
+      };
       console.log(`
-GDC total records count  : ${gdcRecs.length}
-Total bucket keys count  : ${bucketCount}
-GDC missing records count: ${missingRecs.length}
-`);
-      const path = manifestFolder + '/gdcMissing.json';
-      console.log(`Writing ${path}`);
-      await utils.writeFile(path, JSON.stringify(missingRecs));
-    } else {
+  Record count: ${summary.recs.length}
+  Error count : ${summary.errors.length}
+  `
+  );
+      if (bucketName === 'cat-all-buckets') {
+        // Try to determine which gdc objects are not in the buckets
+        const gdcRecs = Object.values(info.gdcDb);
+        const bucketCount = Object.keys(info.bucketDb).length;
+        const missingRecs = gdcRecs.filter(rec => !info.bucketDb[rec.did]);
+        console.log(`
+  GDC total records count  : ${gdcRecs.length}
+  Total bucket keys count  : ${bucketCount}
+  GDC missing records count: ${missingRecs.length}
+  `);
+        const path = manifestFolder + '/gdcMissing.json';
+        console.log(`Writing ${path}`);
+        await utils.writeFile(path, JSON.stringify(missingRecs));
+      } else {
+        const path = manifestFolder + '/' + bucketName + '.cloud-manifest.json';
+        console.log(`Writing ${path}`);
+        await utils.writeFile(path, JSON.stringify(summary));
+      }
+    } else if (command === 'post-recs') {
       const path = manifestFolder + '/' + bucketName + '.cloud-manifest.json';
-      console.log(`Writing ${path}`);
-      await utils.writeFile(path, JSON.stringify(summary));
-    }  
+      const meta = await utils.readFile(path).then(str => JSON.parse(str));
+      const recordList = meta.recs.map(
+        function(rec) {
+          if(rec.fileName) { // we don't want to include fileName in indexd record
+            delete rec.fileName;
+          }
+          return gdcHelper.buildIndexdRecord(rec);
+        }
+      );
+      const resultFolder = outputFolder.replace(/\/+$/, '') + '_upload';
+      let progressCount = 0;
+      const outputBucketExists = {};
+      return utils.chunkForEach(recordList, 10, 
+        async function (rec) { 
+          // pick a time-based output bucket
+          const outputBucketPath = resultFolder + '/' + (Math.floor(Date.now() / (1000*60*10)) % 100);
+          let mkBucketPromise = outputBucketExists[ outputBucketPath ];
+          if (!mkBucketPromise) {
+            mkBucketPromise = utils.mkdirpPromise(outputBucketPath + '/errors');
+            outputBucketExists[ outputBucketPath ] = mkBucketPromise;
+          }
+          return mkBucketPromise.then(
+            function () {
+              return gdcHelper.postToIndexd(indexdHost, indexdCreds, rec);
+            }
+          ).then(
+            function(info) {
+              progressCount += 1;
+              if (0 == progressCount % 500) {
+                console.log('Progress: ' + progressCount + ' records');
+              }
+              return saveRecord(info, outputBucketPath);
+            }
+          ).catch(
+            function(err) { // ugh - log error
+              return saveError({ error: err, ...rec }, outputBucketPath);
+            }
+          );    
+        }
+      );
+    } else {
+      console.log(helpStr);
+    }
+    
   } else {
     console.log(helpStr);
   }

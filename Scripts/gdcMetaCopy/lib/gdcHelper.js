@@ -39,7 +39,10 @@ function buildIndexdRecord(meta) {
     ... meta
   };
 
-  if( ! (record.acl.length > 0 
+  // Fixup ACL if necessary
+  record.acl = record.acl.map(v => v.toLowerCase()).map(v => v === 'public' ? '*' : v);
+  if( ! (record.acl.length > 0 // must have an acl
+        && !record.acl.find(v => !(v === '*' || v.startsWith('phs'))) // every acl is public or dbgap code
         && record.did //&& record.file_name 
         && record.hashes.md5 
         && record.size > 0 && record.urls.length > 0) ) 
@@ -351,6 +354,16 @@ async function fetchGdcIndex() {
   );
 }
 
+/**
+ * Post the given record to indexd - possibly merging the urls
+ * if an existing record already exists
+ * 
+ * @param {string} hostName 
+ * @param {string} credsStr 
+ * @param {IndexdRecord} data
+ * @return {Promise<IndexdRecord>} returned record corresponds to what
+ *     is saved in indexd on success 
+ */
 async function postToIndexd(hostName, credsStr, data) {
   const urlBase = `https://${hostName}/index/`;
   // first - check if a record already exists to update
@@ -364,12 +377,23 @@ async function postToIndexd(hostName, credsStr, data) {
       );
       // if some new url is not already indexed, then update
       if (data.urls.find(it => !urlIndex[it])) {
-        data.urls.reduce(
-          function(acc,it) {
-            acc[it] = true;
-          }, urlIndex
+        // only index one url per protocol - prefer new urls
+        const urlsByProtocol = oldRec.urls.concat(data.urls).reduce(
+          function(acc,url) {
+            const lc = url.toLowerCase();
+            if (lc.startsWith('gs:')) {
+              acc.gs = url;
+            } else if (lc.startsWith('s3:')) {
+              acc.s3 = url;
+            } else {
+              throw new Error('ERROR! unknown url protocol: ' + url);
+            }
+            return acc;
+          }, {}
         );
-        const urlList = Object.keys(urlIndex);
+        //console.log('Got urlsByProtocol: ' + JSON.stringify(urlsByProtocol));
+        
+        const urlList = Object.values(urlsByProtocol);
         const updateRec = {
           acl: data.acl,
           urls: urlList
@@ -383,12 +407,18 @@ async function postToIndexd(hostName, credsStr, data) {
               'Authorization': `Basic ${credsStr}`
             }
           } 
-        );
+        ).then(
+          function() {
+            return { ...oldRec, ...updateRec };
+          }
+        )
       } else {
+        //console.log('Record already in indexd ...');
         return Promise.resolve(oldRec);
       }
     },
-    function(){ // no existing record?
+    function(err){ // no existing record?
+      //console.log('No existing data for ' + data.did);
       return fetchJsonRetry(urlBase + 'index/',
         {
           method: 'POST',
@@ -398,6 +428,8 @@ async function postToIndexd(hostName, credsStr, data) {
             'Authorization': `Basic ${credsStr}`
           }
         } 
+      ).then(
+        function() { return data; }
       );
     }
   );

@@ -14,7 +14,8 @@ const logLevel = 5;
 function mkdirpPromise(pathStr) {
   return new Promise( function(resolve, reject) {
     mkdirp(pathStr, function(err) {
-      if(err) { 
+      if(err) {
+        console.log('Failed to mkdirp path: ' + pathStr);
         reject(err);
       } else {
         resolve(pathStr);
