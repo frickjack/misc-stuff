@@ -507,20 +507,38 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
         ).map(
           // tokenize each line, and convert to an indexd record or null
           function(gdcLine) {
-            const tokenList = gdcLine.split(/\t+/);
-            if (tokenList.length == 5 && tokenList[0].match(rxId)) {
-              // looks like a valid line
-              return {
-                did: tokenList[0],
-                hashes: {
-                  md5: tokenList[2]
-                },
-                size: +tokenList[3],
-                fileName: tokenList[1],
-                acl: aclList,
-                urls: []
-              };
-            } 
+            const tokenList = gdcLine.split(/\s+/);
+            if (tokenList.length === 8) {
+              // .bai record in custom bucket manifest
+              tokenList.shift();
+            }
+            if (tokenList[0].match(rxId)) {
+              if (tokenList.length === 5) {
+                // looks like a valid line
+                return {
+                  did: tokenList[0],
+                  hashes: {
+                    md5: tokenList[2]
+                  },
+                  size: +tokenList[3],
+                  fileName: tokenList[1],
+                  acl: aclList,
+                  urls: []
+                };
+              } else if (tokenList.length === 7) {
+                // looks like a valid line
+                return {
+                  did: tokenList[0],
+                  hashes: {
+                    md5: tokenList[1]
+                  },
+                  size: +tokenList[2],
+                  fileName: tokenList[6],
+                  acl: aclList,
+                  urls: []
+                };
+              }
+            }
             console.log('Ignoring invalid gdc manifest line: ' + JSON.stringify(tokenList));
             return null;
           }
@@ -557,7 +575,8 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
             let isOk = false;
             if (
               tokenList.length === 4 && 
-              +tokenList[2] > 0  // object size
+              +tokenList[2] > 0  && // object size
+              !tokenList[0].match(/^\s*#/) // line commented out
             ) {
               isOk = !!tokenList[3].match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\/+[^\/]+$/); // object key (filename) matches id/filename
               if (!isOk) {

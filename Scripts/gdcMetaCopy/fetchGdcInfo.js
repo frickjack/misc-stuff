@@ -457,8 +457,9 @@ Available buckets: ${Object.keys(bucket2Acl).join(',')}
       const info = await gdcHelper.generateCloudManifest(
         manifestFolder + '/' + bucketName + '.manifest.tsv',
         [ 
-          defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
-          defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
+          defaultInputFolder + '/GDC-DR11/cat-all-manifest.txt'
+          //defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
+          //defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
         ],
         bucketName,
         [ bucket2Acl[ bucketName ] ]
