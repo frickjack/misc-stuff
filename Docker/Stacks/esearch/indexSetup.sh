@@ -93,6 +93,33 @@ curl -iv -X PUT "${ESHOST}/gen3-dev-subject" \
 }
 '
 
+curl -iv -X PUT "${ESHOST}/gen3-dev-models" \
+-H 'Content-Type: application/json' -d'
+{
+    "settings" : {
+        "index" : {
+            "number_of_shards" : 1, 
+            "number_of_replicas" : 0 
+        }
+    },
+    "models": {
+      "subject": {
+        "properties": {
+          "name": { "type": "text" },
+          "project": { "type": "text" },
+          "study": { "type": "text" },
+          "gender": { "type": "keyword" },
+          "race": { "type": "keyword" },
+          "ethnicity": { "type": "keyword" },
+          "vital_status": { "type": "keyword" },
+          "file_type": { "type": "keyword" },
+          "file_format": { "type": "keyword" }
+        }
+      }
+    }
+}
+'
+
 #
 # Arranger type/field data for `subject` index - ugh!
 #
@@ -266,6 +293,65 @@ done
 
 #--------------------------
 
+function indexModelsRecords() {
+  local startIndex
+  local endIndex
+  local COUNT
+  local tmpName
+  startIndex="${1:-0}"
+  endIndex="${2:-0}"
+
+declare -a genderList
+declare -a ethnicityList
+declare -a raceList
+declare -a vitalList
+declare -a fileTypeList
+declare -a fileFormat
+
+genderList=( male female )
+ethnicityList=( 'American Indian' 'Pacific Islander' 'Black' 'Multi-racial' 'White' 'Haspanic' )
+raceList=( white black hispanic asian mixed )
+vitalList=( Alive Dead )
+fileTypeList=( "mRNA Array" "Unaligned Reads" "Lipdomic MS" "Protionic MS" "1Gs Ribosomes")
+fileFormatList=( BEM BAM BED CSV FASTQ RAW TAR TSV TXT IDAT )
+
+COUNT=$startIndex
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+tmpName="$(mktemp -p $XDG_RUNTIME_DIR es.json.XXXXXX)"
+while [[ $COUNT -lt $endIndex ]]; do
+  projectIndex=$(( $RANDOM % 5 ))
+  studyIndex=$(( $RANDOM % 10 ))
+  gender="${genderList[$(( $RANDOM % ${#genderList[@]}))]}"
+  ethnicity="${ethnicityList[$(( $RANDOM % ${#ethnicityList[@]}))]}"
+  race="${raceList[$(( $RANDOM % ${#raceList[@]}))]}"
+  vital="${vitalList[$(( $RANDOM % ${#vitalList[@]}))]}"
+  fileType="${fileTypeList[$(( $RANDOM % ${#fileTypeList[@]}))]}"
+  fileFormat="${fileFormatList[$(( $RANDOM % ${#fileFormatList[@]}))]}"
+
+  cat - > "$tmpName" <<EOM
+{
+  "name": "Subject-$COUNT",
+  "project": "Proj-${projectIndex}",
+  "study": "Study-${projectIndex}${studyIndex}",
+  "gender": "${gender}",
+  "ethnicity": "${ethnicity}",
+  "race": "${race}",
+  "vital_status": "${vital}",
+  "file_type": "${fileType}",
+  "file_format": "${fileFormat}"
+}
+EOM
+  cat - $tmpName <<EOM
+Loading record:
+EOM
+  curl -X PUT "${ESHOST}/gen3-dev-models/models/${COUNT}?pretty" \
+       -H 'Content-Type: application/json' "-d@$tmpName"
+
+  let COUNT+=1
+done
+}
+
+#------------------------------
 
 curl -X GET "${ESHOST}/arranger-projects-dev-gen3-dev-subject/_search" \
 -H 'Content-Type: application/json' -d'

@@ -2,11 +2,13 @@ version: "3.3"
 
 services:
   # see https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-cli-run-prod-mode
-  esearch:
+  elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.3.1
     ports:
       - "9200:9200"
       - "9300:9300"
+    networks:
+      - es
     volumes:
       - "esdata:/usr/share/elasticsearch/data"
       - "/home:/mnt/Users"
@@ -29,8 +31,8 @@ services:
       options:
         max-size: "50m"
         max-file: "10"
-    #networks:
-    #  - es
+    networks:
+      - es
     depends_on:
       - elasticsearch
     environment:
@@ -39,5 +41,5 @@ services:
 volumes:
   esdata:
   
-#networks:
-#  es:
+networks:
+  es:
