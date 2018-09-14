@@ -435,12 +435,8 @@ async function postToIndexd(hostName, credsStr, data) {
   );
 }
 
-
 /**
- * Combine manifests to get a unified manifest to upload to DCF.
- * Also generate error report detailing which records are in AWS
- * and not in GDC and vice versa.
- * 
+ * Build id to record map from the gdc manifest file set of form:
  * 
 reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/data-in/gdcRelease11$ head -5 gdc_manifest_20180521_data_release_11.0_active.txt 
 id	filename	md5	size	state
@@ -456,40 +452,13 @@ id	filename	md5	size	state
 1dc5aa91-51d0-4108-930b-2776135ed6aa	G28831.J82.3.bam	59d04d484e01e08ea8369673611a04cc	13157781195	live
 20ca17de-de36-492a-84d2-0ab0b8605a27	G28059.KMBC-2.1.bam	5ec3a99090452ebbf6c68b9f3e5b9c8f	11029085304	live
 
-reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/data-in/gdcRelease11$ head -5 ../dcfAwsIndex20180727/ccle-open-access.manifest.tsv 
-2018-05-11 12:47:44    5583408 0045c267-ff51-49df-855f-0af0b4f3d151/G41700.ABC-1.5.bam.bai
-2018-05-11 12:18:43    5506624 004dd13d-35a3-40a6-8737-97bf2cb8ec52/G26243.HT-1197.2.bam.bai
-2018-05-11 11:48:12 9218168832 005a752e-cf77-446a-b708-5a28d3a03170/C836.FTC-238.1.bam
-2018-05-11 11:47:58 10810827476 005f9aa9-cb69-4734-9b4f-d93bee8028dc/C836.CADO-ES1.1.bam
-2018-05-11 12:58:19    5727712 006aa252-3e06-4527-84a5-95e100fecd8f/C836.HEC-59.2.bam.bai
-
  * 
- * @param {*} bucketManifestFile 
- * @param {*} gdcManifestFileList 
- * @param {*} aclList 
+ * @param {Array<String>} gdcManifestFileList
+ * @return {[String]:{}} id to record map
  */
-async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bucketName, aclList) {
-  const bucketLineList = await (
-    utils.readFile(bucketManifestFile).then(
-      function(dataStr) { 
-        return dataStr.split(/[\r\n]+/);
-      }
-    )
-  );
-  
-  // paths in bucket that could not be parsed or overlap with the same id or whatever
-  const errors = [];
-  let gdcDupCount = 0;
-  function pushError(did, mess, details, reportToConsole) {
-    const err = {did, mess, details};
-    reportToConsole && console.log('ERROR! ' + JSON.stringify(err));
-    errors.push(err);
-  }
+async function loadGdcManifest(gdcManifestFileList) {
+    const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
 
-  // Regex matches indexd did
-  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
-  // build id to record data from the gdc manifests
-  const gdcDb = await (async function() {
     return Promise.all(
       gdcManifestFileList.map( // read each file
         fileName => utils.readFile(fileName)
@@ -522,7 +491,7 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
                   },
                   size: +tokenList[3],
                   fileName: tokenList[1],
-                  acl: aclList,
+                  acl: [],
                   urls: []
                 };
               } else if (tokenList.length === 7) {
@@ -534,7 +503,7 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
                   },
                   size: +tokenList[2],
                   fileName: tokenList[6],
-                  acl: aclList,
+                  acl: [],
                   urls: []
                 };
               }
@@ -548,11 +517,11 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
             if (rec) { // filter out the null records
               if (!acc[rec.did]) {
                 acc[rec.did] = rec;
-              } else {
-                gdcDupCount += 1;
+              } //else {
+                //gdcDupCount += 1;
                 // GDC says clinical/biospeciman XML files are on "both portals" :-p
                 //console.log(`duplicate gdc records: ${gdcDupCount}?`, [rec, acc[rec.did]]);
-              }
+                //}
             }
             return acc;
           }, 
@@ -560,14 +529,102 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
         );
       }
     );
-  })();
+}
 
+/**
+ * Little helper for accumulating/logging errors
+ * generated during record processing
+ * 
+ * @param {string} did 
+ * @param {string} mess 
+ * @param {object} details 
+ * @param {boolean} reportToConsole 
+ * @param {Array<{did,mess,details}>} errors 
+ */
+function pushErrorList(errors, did, mess, details, reportToConsole) {
+  const err = {did, mess, details};
+  reportToConsole && console.log('ERROR! ' + JSON.stringify(err));
+  errors.push(err);
+}
+
+
+/**
+ * Given a stream of records from a manifest generate
+ * an id to record mapping augmented with data from the gdcDb manifest -
+ * filtering out records not in gdcDb
+ * 
+ * @param {Array<String>} recordStream 
+ * @param {[String]:record} gdcDb
+ * @paramm {function} pushError 
+ */
+async function mergeRecordStreamWithGdc(recordStream, gdcDb, pushError) {
+  return recordStream.map( // augment with gdc metadata - discard, and log as error if not present in gdc
+    function(rec) {
+      const gdcInfo = gdcDb[rec.did];
+      let result = null;
+      if (gdcInfo) {
+        if (gdcInfo.fileName === rec.fileName) {
+          result = { ...gdcInfo, ...rec };
+        } else {
+          pushError(rec.did, 'Ignoring bucket entry with mismatch filename', [rec, gdcInfo]);
+        }
+      } else {
+        pushError(rec.did, 'Ugh, untracked bucket key!', rec);
+      }
+      return result;
+    }
+  ).reduce(
+    function(acc, it) {
+      if (it) {
+        if (acc[it.did]) {
+          pushError(it.did, 'Ugh, duplicate records!', [it, acc[it.did]], true);
+        } else {
+          acc[it.did] = it;
+        }
+      }
+      return acc;
+    }, {}
+  );
+}
+
+
+/**
+ * Combine manifests to get a unified manifest to upload to DCF.
+ * Also generate error report detailing which records are in AWS
+ * and not in GDC and vice versa.
+ * 
+ * 
+
+reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/data-in/gdcRelease11$ head -5 ../dcfAwsIndex20180727/ccle-open-access.manifest.tsv 
+2018-05-11 12:47:44    5583408 0045c267-ff51-49df-855f-0af0b4f3d151/G41700.ABC-1.5.bam.bai
+2018-05-11 12:18:43    5506624 004dd13d-35a3-40a6-8737-97bf2cb8ec52/G26243.HT-1197.2.bam.bai
+2018-05-11 11:48:12 9218168832 005a752e-cf77-446a-b708-5a28d3a03170/C836.FTC-238.1.bam
+2018-05-11 11:47:58 10810827476 005f9aa9-cb69-4734-9b4f-d93bee8028dc/C836.CADO-ES1.1.bam
+2018-05-11 12:58:19    5727712 006aa252-3e06-4527-84a5-95e100fecd8f/C836.HEC-59.2.bam.bai
+
+ * 
+ * @param {*} bucketManifestFile 
+ * @param {*} gdcManifestFileList 
+ * @param {*} aclList 
+ * @return {[string]:record}
+ */
+async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bucketName, aclList) {
+  const errors = [];
+  function pushError(did, mess, details, reportToConsole) {
+    return pushErrorList(errors, did, mess, details, reportToConsole);
+  }
+
+  // Regex matches indexd did
+  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
+  // build id to record data from the gdc manifests
+  const gdcDb = await loadGdcManifest(gdcManifestFileList);
+  
   // build id to record data for the bucket we have a manifest of
   try {
     const bucketDb = await utils.readFile(bucketManifestFile
     ).then(
       function (content) {
-        return content.split(/[\r\n]+/ // split file into lines
+        const recordStream = content.split(/[\r\n]+/ // split file into lines
         ).map( // split each line into tokens
           function(line){ return line.split(/\s+/); }
         ).filter(  // only include valid looking data-file lines
@@ -593,36 +650,12 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
             return {
               did: pathParts[0],
               fileName: pathParts[1],
+              acl: aclList,
               urls: [ 's3://' + bucketName + '/' + tokenList[3] ]
             };
           }
-        ).map( // augment with gdc metadata - discard, and log as error if not present in gdc
-          function(rec) {
-            const gdcInfo = gdcDb[rec.did];
-            let result = null;
-            if (gdcInfo) {
-              if (gdcInfo.fileName === rec.fileName) {
-                result = { ...gdcInfo, ...rec };
-              } else {
-                pushError(rec.did, 'Ignoring bucket entry with mismatch filename', [rec, gdcInfo]);
-              }
-            } else {
-              pushError(rec.did, 'Ugh, untracked bucket key!', rec);
-            }
-            return result;
-          }
-        ).reduce(
-          function(acc, it) {
-            if (it) {
-              if (acc[it.did]) {
-                pushError(it.did, 'Ugh, duplicate records!', [it, acc[it.did]], true);
-              } else {
-                acc[it.did] = it;
-              }
-            }
-            return acc;
-          }, {}
         );
+        return mergeRecordStreamWithGdc(recordStream, gdcDb, pushError);
       }
     );
     return {
@@ -637,10 +670,107 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
 
 }
 
+/**
+ * Similar to generateCloudManifest, but for the
+ * comprehensive (multi-bucket) google manifest
+ *
+$ head -5 data-in/google20180911_pxd1716/manifest_for_DCF_20180824.csv 
+file_gcs_url,file_gdc_id,file_size,file_gcs_timestamp,file_name
+gs://5aa919de-0aa0-43ec-9ec3-288481102b6d/tcga/CHOL/RNA/RNA-Seq/UNC-LCCC/ILLUMINA/UNCID_2527433.6fcc3918-f4b0-42ab-b00c-027175606cbd.sorted_genome_alignments.bam.bai,cd82fbcd-4260-4e46-83b2-60f43ac48853,5740904,2016-03-28T20:16:26Z,UNCID_2527433.6fcc3918-f4b0-42ab-b00c-027175606cbd.sorted_genome_alignments.bam.bai
+gs://5aa919de-0aa0-43ec-9ec3-288481102b6d/tcga/CHOL/RNA/RNA-Seq/UNC-LCCC/ILLUMINA/UNCID_2528055.63a3bd41-6a68-4eb5-ad4f-0fd05be97ac1.sorted_genome_alignments.bam.bai,58083c7f-92aa-43de-8b7b-bbd11614256e,5772208,2016-03-28T20:16:26Z,UNCID_2528055.63a3bd41-6a68-4eb5-ad4f-0fd05be97ac1.sorted_genome_alignments.bam.bai
+gs://5aa919de-0aa0-43ec-9ec3-288481102b6d/tcga/CHOL/RNA/RNA-Seq/UNC-LCCC/ILLUMINA/UNCID_2529222.2649a2ec-8bb0-486e-9eec-ac9c76021b60.sorted_genome_alignments.bam.bai,06816104-0733-472f-9d32-a973d125ccbb,5012400,2016-03-28T20:16:26Z,UNCID_2529222.2649a2ec-8bb0-486e-9eec-ac9c76021b60.sorted_genome_alignments.bam.bai
+gs://5aa919de-0aa0-43ec-9ec3-288481102b6d/tcga/CHOL/RNA/RNA-Seq/UNC-LCCC/ILLUMINA/UNCID_2529016.e819d2ae-9cfb-4256-a15c-23fbb3683ee7.sorted_genome_alignments.bam.bai,c996e67d-0d08-462f-a2d4-d0e86ee23fe7,5066464,2016-03-28T20:16:26Z,UNCID_2529016.e819d2ae-9cfb-4256-a15c-23fbb3683ee7.sorted_genome_alignments.bam.bai
+
+ *  
+ * @param {string} googleManifestFile 
+ * @param {Array<String>} gdcManifestFileList 
+ * @param {[string]:string} bucket2Acl gs://bucket to acl
+ * @return {[string]:record} googManfiest+gdcManifest+aclMap intersection 
+ */
+async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, bucket2Acl) {
+  const errors = [];
+  function pushError(did, mess, details, reportToConsole) {
+    return pushErrorList(errors, did, mess, details, reportToConsole);
+  }
+  if (Object.values(bucket2Acl).find(it => ! Array.isArray(it))) {
+    // paranoid check - verify bucket2Acl values are arrays
+    throw new Error('Invalid bucket2Acl mapping', bueckt2Acl);
+  }
+
+  // Regex matches indexd did
+  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
+  const rxBucket = /^(gs:\/\/[^\/\s]+)\//;
+  function getBucket(gsUrl) {
+    const arr = rxBucket.exec(gsUrl);
+    return arr ? arr[1] : null;
+  }
+  
+  // build id to record data from the gdc manifests
+  const gdcDb = await loadGdcManifest(gdcManifestFileList);
+  
+  // build id to record data for the bucket we have a manifest of
+  try {
+    const bucketDb = await utils.readFile(bucketManifestFile
+    ).then(
+      function (content) {
+        const recordStream = content.split(/[\r\n]+/ // split file into lines
+        ).map( // split each line into tokens, strip quotes
+          function(line){ return line.split(',', 5).map(tok => tok.replace(/(^[\s"]+)|([\s"]+$)/g, '')); }
+        ).filter(  // only include valid looking data-file lines
+          function(tokenList){
+            let isOk = false;
+            if (
+              tokenList.length === 5 && 
+              +tokenList[2] > 0  && // object size
+              !tokenList[0].match(/^\s*#/) // line commented out
+            ) {
+              const bucketName = getBucket(tokenList[0]);
+              // tokenList[0] should be gs://bucketname
+              isOk = !!(
+                bucketName &&
+                bucket2Acl[bucketName] &&
+                rxId.test(tokenList[1])
+              ); // object key (filename) matches id/filename
+              if (!isOk) {
+                // log error if pattern is not as expected
+                pushError('', 'invalid bucket manifest line', { tokenList });
+              }
+              // else - don't bother logging errors for prefix (non-object) entries in bucket manifest
+            }
+            return isOk;
+          }
+        ).map( // convert token list to indexd record
+          function(tokenList) {
+            return {
+              did: tokenList[1],
+              fileName: tokenList[0].replace(/.*\//, ''),
+              acl: bucket2Acl[getBucket(tokenList[0])],
+              urls: [ tokenList[0] ]
+            };
+          }
+        );
+        return mergeRecordStreamWithGdc(recordStream, gdcDb, pushError);
+      }
+    );
+    return {
+      gdcDb,
+      bucketDb,
+      errors
+    };  
+  } catch (err) {
+    console.log('Ugh!  Failed to build cloud-manifest: ' + JSON.stringify(err), err);
+    return Promise.reject(err);
+  }
+
+}
+
+
+
 module.exports = {
   fetchGdcRecord,
   fetchGdcRecordCacheOnly,
   generateCloudManifest,
+  generateGoogleManifest,
   buildIndexdRecord,
   fetchGdcIndex,
   postToIndexd
