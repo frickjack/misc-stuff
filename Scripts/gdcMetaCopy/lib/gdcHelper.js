@@ -539,12 +539,12 @@ async function loadGdcManifest(gdcManifestFileList) {
  * @param {string} mess 
  * @param {object} details 
  * @param {boolean} reportToConsole 
- * @param {Array<{did,mess,details}>} errors 
+ * @return {did,mess,details}
  */
-function pushErrorList(errors, did, mess, details, reportToConsole) {
+function newError(did, mess, details, reportToConsole) {
   const err = {did, mess, details};
   reportToConsole && console.log('ERROR! ' + JSON.stringify(err));
-  errors.push(err);
+  return err;
 }
 
 
@@ -555,36 +555,79 @@ function pushErrorList(errors, did, mess, details, reportToConsole) {
  * 
  * @param {Array<String>} recordStream 
  * @param {[String]:record} gdcDb
- * @paramm {function} pushError 
+ * @return {db:{[string}]:Record}, notFound:[Record], errors}  
  */
-async function mergeRecordStreamWithGdc(recordStream, gdcDb, pushError) {
-  return recordStream.map( // augment with gdc metadata - discard, and log as error if not present in gdc
+async function mergeRecordStreamWithGdc(recordStream, gdcDb) {
+  const result = recordStream.map( // augment with gdc metadata - discard, and log as error if not present in gdc
     function(rec) {
       const gdcInfo = gdcDb[rec.did];
-      let result = null;
+      let info = { newRec: null, notFound: null, err: null };
       if (gdcInfo) {
         if (gdcInfo.fileName === rec.fileName) {
-          result = { ...gdcInfo, ...rec };
+          info.newRec = { ...gdcInfo, ...rec };
         } else {
-          pushError(rec.did, 'Ignoring bucket entry with mismatch filename', [rec, gdcInfo]);
+          info.err = newError(rec.did, 'Ignoring bucket entry with mismatch filename', [rec, gdcInfo]);
         }
       } else {
-        pushError(rec.did, 'Ugh, untracked bucket key!', rec);
+        info.notFound = rec;
       }
-      return result;
+      return info;
     }
   ).reduce(
-    function(acc, it) {
-      if (it) {
+    function(acc, info) {
+      if (info.newRec) { // filter null entries (no matching entry in gdcdb)
+        const it = info.newRec;
         if (acc[it.did]) {
-          pushError(it.did, 'Ugh, duplicate records!', [it, acc[it.did]], true);
+          acc.errors.push(newError(it.did, 'Ugh, duplicate records!', [it, acc[it.did]], true));
         } else {
           acc[it.did] = it;
+          acc.db[it.did] = it;
         }
       }
+      if (info.notFound) {
+        acc.notFound.push(info.notFound);
+      }
+      if (info.err) {
+        acc.errors.push(info.err);
+      }
       return acc;
-    }, {}
+    }, {
+      db: {},
+      notFound: [],
+      errors: []
+    }
   );
+
+  /*
+  // ok - have a bunch of 'notFound' records - let's check the gdc api if they
+  // are "index" records that are not included in the gdc manifest
+  const oldNotFound = result.notFound;
+  result.notFound = [];
+
+  return utils.chunkForEach(oldNotFound, 10, 
+    async function (rec) {
+      return fetchIndexRecord(rec.did, rec, false).catch(
+        function(err3) {
+          return fetchIndexRecord(rec.did, rec, true).catch(
+            function(err4) {
+              return Promise.reject([err3, err4].map(err => typeof err === "string" ? err : "" + err));
+            }
+          );
+        }
+      ).then(
+        function(newRec) {
+          result.db[newRec.did] = newRec;
+        },
+        function(err) {
+          result.notFound.push(rec);
+        }
+      );
+    }
+  ).then(
+    function() { return result; }
+  );
+  */
+ return result;
 }
 
 
@@ -610,10 +653,7 @@ reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/dat
  */
 async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bucketName, aclList) {
   const errors = [];
-  function pushError(did, mess, details, reportToConsole) {
-    return pushErrorList(errors, did, mess, details, reportToConsole);
-  }
-
+  
   // Regex matches indexd did
   const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
   // build id to record data from the gdc manifests
@@ -621,9 +661,9 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
   
   // build id to record data for the bucket we have a manifest of
   try {
-    const bucketDb = await utils.readFile(bucketManifestFile
+    const mergeData = await utils.readFile(bucketManifestFile
     ).then(
-      function (content) {
+      async function (content) {
         const recordStream = content.split(/[\r\n]+/ // split file into lines
         ).map( // split each line into tokens
           function(line){ return line.split(/\s+/); }
@@ -638,7 +678,7 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
               isOk = !!tokenList[3].match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\/+[^\/]+$/); // object key (filename) matches id/filename
               if (!isOk) {
                 // log error if pattern is not as expected
-                pushError('', 'invalid bucket manifest line', { tokenList });
+                errors.push(newError('', 'invalid bucket manifest line', { tokenList }));
               }
               // else - don't bother logging errors for prefix (non-object) entries in bucket manifest
             }
@@ -655,13 +695,15 @@ async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bu
             };
           }
         );
-        return mergeRecordStreamWithGdc(recordStream, gdcDb, pushError);
+        return mergeRecordStreamWithGdc(recordStream, gdcDb);
       }
     );
+    errors = errors.concat(mergeData.errors);
     return {
       gdcDb,
-      bucketDb,
-      errors
+      bucketDb: mergeData.db,
+      errors,
+      notFound: mergeData.notFound
     };  
   } catch (err) {
     console.log('Ugh!  Failed to build cloud-manifest: ' + JSON.stringify(err), err);
@@ -689,9 +731,7 @@ gs://5aa919de-0aa0-43ec-9ec3-288481102b6d/tcga/CHOL/RNA/RNA-Seq/UNC-LCCC/ILLUMIN
  */
 async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, bucket2Acl) {
   const errors = [];
-  function pushError(did, mess, details, reportToConsole) {
-    return pushErrorList(errors, did, mess, details, reportToConsole);
-  }
+  
   if (Object.values(bucket2Acl).find(it => ! Array.isArray(it))) {
     // paranoid check - verify bucket2Acl values are arrays
     throw new Error('Invalid bucket2Acl mapping', bueckt2Acl);
@@ -710,9 +750,9 @@ async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, b
   
   // build id to record data for the bucket we have a manifest of
   try {
-    const bucketDb = await utils.readFile(bucketManifestFile
+    const mergeData = await utils.readFile(bucketManifestFile
     ).then(
-      function (content) {
+      async function (content) {
         const recordStream = content.split(/[\r\n]+/ // split file into lines
         ).map( // split each line into tokens, strip quotes
           function(line){ return line.split(',', 5).map(tok => tok.replace(/(^[\s"]+)|([\s"]+$)/g, '')); }
@@ -733,7 +773,7 @@ async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, b
               ); // object key (filename) matches id/filename
               if (!isOk) {
                 // log error if pattern is not as expected
-                pushError('', 'invalid bucket manifest line', { tokenList });
+                errors.push(newError('', 'invalid bucket manifest line', { tokenList }));
               }
               // else - don't bother logging errors for prefix (non-object) entries in bucket manifest
             }
@@ -749,14 +789,15 @@ async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, b
             };
           }
         );
-        return mergeRecordStreamWithGdc(recordStream, gdcDb, pushError);
+        return mergeRecordStreamWithGdc(recordStream, gdcDb);
       }
     );
     return {
       gdcDb,
-      bucketDb,
-      errors
-    };  
+      bucketDb: mergeData.db,
+      errors: errors.concat(mergeData.errors),
+      notFound: mergeData.notFound
+    };    
   } catch (err) {
     console.log('Ugh!  Failed to build cloud-manifest: ' + JSON.stringify(err), err);
     return Promise.reject(err);

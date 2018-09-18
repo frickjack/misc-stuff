@@ -505,8 +505,8 @@ GDC missing records count: ${missingRecs.length}
         // manifest collected from gdc-api by cloud partner
         defaultInputFolder + '/GDC-DR11/cat-all-manifest.txt',
         // the gdc r11 manifest files do not include .bai files, etc 
-        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_active.txt',
-        defaultInputFolder + '/gdcRelease11/gdc_manifest_20180521_data_release_11.0_legacy.txt'
+        defaultInputFolder + '/gdcRelease12/gdc_manifest_20180613_data_release_12.0_active.txt',
+        defaultInputFolder + '/gdcRelease12/gdc_manifest_20180613_data_release_12.0_legacy.txt'
       ],
       googleBucket2Acl
     );
