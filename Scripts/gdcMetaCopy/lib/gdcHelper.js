@@ -10,7 +10,23 @@ const agent = new https.Agent({
   maxSockets: 30
 });
 
+// Regex matches indexd did
+const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
 
+
+/**
+ * Validate that the given record conforms to some expected rules
+ * 
+ * @param {IndexdRecord} record
+ * @return boolean
+ */
+function isRecordValid(record) {
+  return (record.acl.length > 0 // must have an acl
+    && !record.acl.find(v => !(v === '*' || v.startsWith('phs'))) // every acl is public or dbgap code
+    && record.did && rxId.test(record.did) 
+    && record.hashes.md5 
+    && record.size > 0 && record.urls.length > 0);
+}
 
 /**
  * Build index record
@@ -41,12 +57,7 @@ function buildIndexdRecord(meta) {
 
   // Fixup ACL if necessary
   record.acl = record.acl.map(v => v.toLowerCase()).map(v => v === 'public' ? '*' : v);
-  if( ! (record.acl.length > 0 // must have an acl
-        && !record.acl.find(v => !(v === '*' || v.startsWith('phs'))) // every acl is public or dbgap code
-        && record.did //&& record.file_name 
-        && record.hashes.md5 
-        && record.size > 0 && record.urls.length > 0) ) 
-  {
+  if (!isRecordValid(record)) {
     let msg = console.log('Invalid record: ' + JSON.stringify(record, null, 4));
     logLevel > 0 && console.log(msg);
     throw new Error(msg);
@@ -457,8 +468,6 @@ id	filename	md5	size	state
  * @return {[String]:{}} id to record map
  */
 async function loadGdcManifest(gdcManifestFileList) {
-    const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
-
     return Promise.all(
       gdcManifestFileList.map( // read each file
         fileName => utils.readFile(fileName)
@@ -654,8 +663,6 @@ reuben@reuben-pasquini-cdis:~/Code/Littleware/misc-stuff/Scripts/gdcMetaCopy/dat
 async function generateCloudManifest(bucketManifestFile, gdcManifestFileList, bucketName, aclList) {
   const errors = [];
   
-  // Regex matches indexd did
-  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
   // build id to record data from the gdc manifests
   const gdcDb = await loadGdcManifest(gdcManifestFileList);
   
@@ -738,7 +745,6 @@ async function generateGoogleManifest(bucketManifestFile, gdcManifestFileList, b
   }
 
   // Regex matches indexd did
-  const rxId = /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/;
   const rxBucket = /^(gs:\/\/[^\/\s]+)\//;
   function getBucket(gsUrl) {
     const arr = rxBucket.exec(gsUrl);
@@ -814,5 +820,8 @@ module.exports = {
   generateGoogleManifest,
   buildIndexdRecord,
   fetchGdcIndex,
-  postToIndexd
+  isRecordValid,
+  newError,
+  postToIndexd,
+  rxId
 };
