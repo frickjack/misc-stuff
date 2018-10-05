@@ -27,6 +27,13 @@ genpassword() {
     base64 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32
 }
 
+# meminfo - awk demo
+meminfo() {
+ ps auxwww; 
+ ps auxh | awk 'BEGIN { sum1=0; } { sum1 += $6; } END { print "-------------------"; print sum1; }'
+}
+
 # less with escape-char support
 alias lessr='less -R'
+
 
