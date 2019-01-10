@@ -23,3 +23,15 @@ chef generate repo little-repo
 ```
 sudo chef-client --local-mode --node-name littlenode --override-runlist 'role[example]' --why-run
 ```
+
+# littleware roles
+
+## dev
+
+developer machine
+
+* nodejs
+* jdk
+* python3
+* psql postgres client
+* docker
