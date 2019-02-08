@@ -21,7 +21,7 @@ chef generate repo little-repo
 # Run chef-client in "zero" mode
 
 ```
-sudo chef-client --local-mode --node-name littlenode --override-runlist 'role[example]' --why-run
+sudo /bin/rm -rf nodes && sudo chef-client --local-mode --node-name littlenode --override-runlist 'role[example]' --why-run -l debug
 ```
 
 # littleware roles

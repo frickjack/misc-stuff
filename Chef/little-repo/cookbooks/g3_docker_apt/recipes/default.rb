@@ -4,11 +4,7 @@
 #  * https://docs.docker.com/compose/install/#install-compose
 #
 
-include_recipe 'base-apt'
-
-package 'docker-apt-transport-https' do
-  package_name 'apt-transport-https'
-end
+include_recipe 'g3_base_apt'
 
 apt_repository 'docker-apt-repo' do
   uri   'https://download.docker.com/linux'
