@@ -4,7 +4,7 @@
 #  * https://docs.docker.com/compose/install/#install-compose
 #
 
-include_recipe 'g3_base_apt'
+include_recipe 'lw_base_apt'
 
 apt_repository 'docker-apt-repo' do
   uri   'https://download.docker.com/linux'
