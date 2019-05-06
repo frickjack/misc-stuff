@@ -1,0 +1,84 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "AWS CloudFormation Template sets up core account managed policies and roles",
+
+  "Parameters" : {
+
+    "RegionList": {
+      "Description" : "List of regions to restrict API calls to",
+      "Type": "CommaDelimitedList",
+      "Default" : "us-east-1,us-east-2",
+      "ConstraintDescription" : "must be a list of region names"
+    }
+  },
+
+  "Resources" : {
+    "IamGroupSuperAdmin": {
+      "Type" : "AWS::IAM::Group",
+      "Properties" : {
+          "GroupName" : "superAdmin",
+          "Path" : "/littleware/account/"
+        }
+    },
+    "IamPolicySuperAdminMfa": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "super admin policy - do everything - requires MFA - attach to groups not roles",
+        "ManagedPolicyName" : "superAdminMFA",
+        "Path" : "/littleware/account/",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*",
+                  "Condition": {
+                      "Bool": {
+                          "aws:MultiFactorAuthPresent": "true"
+                      }
+                  }
+              }
+          ]
+        },
+        "Groups" : [ "/littleware/account/superAdmin" ]
+      }
+    },
+    "IamPolicyLimitRegions": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+          "Description" : "limit API calls to specified regions",
+          "ManagedPolicyName" : "limitRegions",
+          "Path" : "/littleware/account/",
+          "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "*",
+                "Resource": "*",
+                "Condition": {
+                  "StringNotEquals": {
+                    "aws:RequestedRegion": [
+                      "eu-central-1",
+                      "eu-west-1"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "Roles" : [ ".*" ]
+        }
+    }
+
+  },
+
+  "Outputs" : {
+    "WebsiteURL" : {
+      "Value" : { "Fn::Join" : ["", ["http://", { "Fn::GetAtt" : [ "WebServer", "PublicDnsName" ]}, "/wordpress" ]]},
+      "Description" : "WordPress Website"
+    }
+  }
+}
