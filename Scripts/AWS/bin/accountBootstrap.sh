@@ -87,6 +87,22 @@ EOM
 }
 EOM
     )" 1>&2
+
+    aws iam update-account-password-policy --cli-input-json "$(cat - <<EOM
+{
+    "MinimumPasswordLength": 12,
+    "RequireSymbols": true,
+    "RequireNumbers": true,
+    "RequireUppercaseCharacters": true,
+    "RequireLowercaseCharacters": true,
+    "AllowUsersToChangePassword": true,
+    "MaxPasswordAge": 90,
+    "PasswordReusePrevention": 3,
+    "HardExpiry": false
+}
+EOM
+    )" 1>&2
+    
     echo $bucket
   )
 }
