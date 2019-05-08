@@ -71,8 +71,35 @@
           },
           "Roles" : [ ".*" ]
         }
-    }
+    },
 
+    "IamPolicyRotateKeys": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+          "Description" : "allow an IAM user to rotate her own API keys",
+          "ManagedPolicyName" : "userRotateKeys",
+          "Path" : "/littleware/account/",
+          "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "ManageOwnAccessKeys",
+                    "Effect": "Allow",
+                    "Action": [
+                        "iam:CreateAccessKey",
+                        "iam:DeleteAccessKey",
+                        "iam:GetAccessKeyLastUsed",
+                        "iam:GetUser",
+                        "iam:ListAccessKeys",
+                        "iam:UpdateAccessKey"
+                    ],
+                    "Resource": "arn:aws:iam::*:user/${aws:username}"
+                }
+            ]
+          },
+          "Groups" : [ ".*" ]
+        }
+      }
   },
 
   "Outputs" : {
