@@ -14,12 +14,13 @@ LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
 #
 arun() {
     if [[ $# -lt 1 || "$1" =~ ^-*help$ ]]; then
-      echo "Use: arun [--profile PROFILE] command ..."
+      bash "$LITTLE_HOME/bin/help.sh"
       return 1
     fi
 
     local profile
-    profile="${AWS_PROFLIE:-default}"
+    profile="${AWS_PROFILE:-default}"
+    local cacheFile
     cacheFile="$XDG_RUNTIME_DIR/profile_${profile}.json"
     if [[ $# -gt 1 && "$1" =~ ^--*profile$ ]]; then
       shift
@@ -27,13 +28,21 @@ arun() {
       shift
     fi
 
+    local region
+    if ! region="$(aws --profile "$profile" configure get region)"; then
+      echo "ERROR: aws configure get region failed" 1>&2
+      return 1
+    fi
+
     local cacheFile
     cacheFile="$XDG_RUNTIME_DIR/profile_${profile}.json"
     if [[ -f "$cacheFile" ]]; then
       local expiration
       local now
-      expiration="$(jq -r .Credentials.Expiration < "$cacheFile")"
-      expiration="$(date "-d$expiration" '+%s')"
+      expiration="$(jq -e -r .Credentials.Expiration < "$cacheFile")"
+      if [[ -n "$expiration" ]]; then
+        expiration="$(date "-d$expiration" '+%s')"
+      fi
       now="$(date '+%s')"
       if [[ "$expiration" -lt "$((now  + 300))" ]]; then
         /bin/rm "$cacheFile"
@@ -52,9 +61,19 @@ arun() {
       local mfaSerial
       mfaSerial="$(aws --profile "$profile" configure get mfa_serial)"
       if [[ -n "$role" ]]; then
-        aws --output json sts assume-role --role-arn "$role" --role-session "$USER" --serial-number "$mfaSerial" --token-code "$code" > "$cacheFile"
+        local sourceProfile
+        sourceProfile="$(aws --profile "$profile" configure get source_profile)"
+        if [[ -z "$sourceProfile" ]]; then
+          echo "ERROR: no source_profile setting in aws config for $profile" 1>&2
+          return 1
+        fi
+        if ! aws --profile "$sourceProfile" --output json sts assume-role --role-arn "$role" --role-session "$USER" --serial-number "$mfaSerial" --token-code "$code" > "$cacheFile"; then
+          return 1
+        fi
       else
-        aws --output json sts get-session-token --serial-number "$mfaSerial" --token-code "$code" > "$cacheFile"
+        if ! aws --profile "$profile" --output json sts get-session-token --serial-number "$mfaSerial" --token-code "$code" > "$cacheFile"; then
+          return 1
+        fi
       fi
     fi
     (
