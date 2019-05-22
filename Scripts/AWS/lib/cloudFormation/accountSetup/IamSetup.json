@@ -1,30 +1,25 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-
   "Description" : "AWS CloudFormation Template sets up core account managed policies and roles",
-
   "Parameters" : {
-
     "RegionList": {
       "Description" : "List of regions to restrict API calls to",
       "Type": "CommaDelimitedList",
       "Default" : "us-east-1,us-east-2",
       "ConstraintDescription" : "must be a list of region names"
+    },
+    "AdminPolicyList": {
+      "Description": "List of managed policies available to administrators",
+      "Type": "String",
+      "Default": 
+        "arn:aws:iam::aws:policy/AmazonAPIGatewayAdministrator,arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess,arn:aws:iam::aws:policy/AmazonCognitoPowerUser,arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess,arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess,arn:aws:iam::aws:policy/AmazonRoute53FullAccess,arn:aws:iam::aws:policy/AmazonS3FullAccess,arn:aws:iam::aws:policy/AmazonSNSFullAccess,arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess,arn:aws:iam::aws:policy/AWSCertificateManagerPrivateCAFullAccess,arn:aws:iam::aws:policy/AWSCloudTrailFullAccess,arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess,arn:aws:iam::aws:policy/AWSCodeCommitFullAccess,arn:aws:iam::aws:policy/AWSCodeDeployFullAccess,arn:aws:iam::aws:policy/AWSCodePipelineFullAccess,arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser,arn:aws:iam::aws:policy/AWSLambdaFullAccess,arn:aws:iam::aws:policy/SecretsManagerReadWrite"
     }
   },
-
   "Resources" : {
-    "IamGroupSuperAdmin": {
-      "Type" : "AWS::IAM::Group",
-      "Properties" : {
-          "GroupName" : "superAdmin",
-          "Path" : "/littleware/account/"
-        }
-    },
-    "IamPolicySuperAdminMfa": {
+    "IamPolicyAssumeAdmin": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
-        "Description" : "super admin policy - do everything - requires MFA - attach to groups not roles",
+        "Description" : "assume admin policy - at the /account level - do everything",
         "ManagedPolicyName" : "superAdminMFA",
         "Path" : "/littleware/account/",
         "PolicyDocument": {
@@ -33,7 +28,7 @@
               {
                   "Effect": "Allow",
                   "Action": "*",
-                  "Resource": "*",
+                  "Resource": { "Ref": "IamRoleAdmin" },
                   "Condition": {
                       "Bool": {
                           "aws:MultiFactorAuthPresent": "true"
@@ -41,14 +36,34 @@
                   }
               }
           ]
-        },
-        "Groups" : [ "/littleware/account/superAdmin" ]
+        }
       }
+    },
+    "IamPolicyAssumeOperator": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "super admin policy - at the /account level - do everything - requires MFA - attach to groups not roles",
+        "ManagedPolicyName" : "assumeOperatorMFA",
+        "Path" : "/littleware/account/",
+        "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": { "Ref": "IamRoleOperator" },
+                "Condition": {
+                      "Bool": {
+                          "aws:MultiFactorAuthPresent": "true"
+                      }
+                  }
+              }]
+          }
+        }
     },
     "IamPolicyLimitRegions": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
-          "Description" : "limit API calls to specified regions",
+          "Description" : "/account level policy - limit API calls to specified regions",
           "ManagedPolicyName" : "limitRegions",
           "Path" : "/littleware/account/",
           "PolicyDocument" : {
@@ -68,15 +83,32 @@
                 }
               }
             ]
-          },
-          "Roles" : [ ".*" ]
+          }
+        }
+    },
+    "IamPolicyCloudFormation": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+          "Description" : "/account level policy - full cloud-formation access",
+          "ManagedPolicyName" : "LittleFormation",
+          "Path" : "/littleware/account/",
+          "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": ["cloudformation:*"],
+                "Resource": "*"
+              }
+            ]
+          }
         }
     },
 
     "IamPolicyRotateKeys": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
-          "Description" : "allow an IAM user to rotate her own API keys",
+          "Description" : "/account level policy - allow an IAM user to rotate her own API keys",
           "ManagedPolicyName" : "userRotateKeys",
           "Path" : "/littleware/account/",
           "PolicyDocument" : {
@@ -96,16 +128,73 @@
                     "Resource": "arn:aws:iam::*:user/${aws:username}"
                 }
             ]
-          },
-          "Groups" : [ ".*" ]
+          }
         }
+      },
+
+      "IamGroupAdmin": {
+        "Type" : "AWS::IAM::Group",
+        "Properties" : {
+            "GroupName" : "LittleAdmin",
+            "Path" : "/littleware/account/",
+            "ManagedPolicyArns": { "Fn::Split": [",", 
+              { "Fn::Join": [",", [ 
+                { "Ref": "IamPolicyRotateKeys" },
+                { "Ref": "IamPolicyAssumeAdmin" }
+              ]]}
+            ]}
+        }
+      },
+
+      "IamGroupOperator": {
+        "Type" : "AWS::IAM::Group",
+        "Properties" : {
+            "GroupName" : "operator",
+            "Path" : "/littleware/account/",
+            "ManagedPolicyArns": { "Fn::Split": [",", 
+              { "Fn::Join": [",", [ 
+                { "Ref": "IamPolicyRotateKeys" },
+                { "Ref": "IamPolicyAssumeOperator" }
+              ]]}
+            ]}
+          }
+      },
+
+      "IamRoleOperator": {
+        "Type" : "AWS::IAM::Role",
+        "Properties" : {
+            "AssumeRolePolicyDocument" : {},
+            "ManagedPolicyArns": { "Fn::Split": [",", 
+              { "Fn::Join": [",", [ 
+                { "Ref": "AdminPolicyList" },
+                { "Ref": "IamPolicyLimitRegions" }
+              ]]}
+            ]},
+            "MaxSessionDuration" : 3600,
+            "Path" : "/littleware/account/user/",
+            "RoleName" : "LittleOperator"
+          }
+      },
+      "IamRoleAdmin": {
+        "Type" : "AWS::IAM::Role",
+        "Properties" : {
+            "AssumeRolePolicyDocument" : {},
+            "ManagedPolicyArns": { "Fn::Split": [",", 
+              { "Fn::Join": [",", [ 
+                { "Ref": "AdminPolicyList" },
+                { "Ref": "IamPolicyLimitRegions" },
+                { "Ref": "IamPolicyCloudFormation" },
+                "arn:aws:iam::aws:policy/IAMFullAccess"
+              ]]}
+            ]},
+            "MaxSessionDuration" : 3600,
+            "Path" : "/littleware/account/user/",
+            "RoleName" : "LittleOperator"
+          }
       }
+
   },
 
   "Outputs" : {
-    "WebsiteURL" : {
-      "Value" : { "Fn::Join" : ["", ["http://", { "Fn::GetAtt" : [ "WebServer", "PublicDnsName" ]}, "/wordpress" ]]},
-      "Description" : "WordPress Website"
-    }
   }
 }

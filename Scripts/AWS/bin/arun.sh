@@ -17,6 +17,10 @@ arun() {
       bash "$LITTLE_HOME/bin/help.sh"
       return 1
     fi
+    if [[ "$1" == "profiles" ]]; then
+      cat ~/.aws/config | grep '\[' | sed -E 's/\[(profile )?//g' | sed 's/]//g'
+      return 0
+    fi
 
     local profile
     profile="${AWS_PROFILE:-default}"
