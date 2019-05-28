@@ -7,42 +7,94 @@
       "Type": "CommaDelimitedList",
       "Default" : "us-east-1,us-east-2",
       "ConstraintDescription" : "must be a list of region names"
-    },
-    "AdminPolicyList": {
-      "Description": "List of managed policies available to administrators",
-      "Type": "String",
-      "Default": 
-        "arn:aws:iam::aws:policy/AmazonAPIGatewayAdministrator,arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess,arn:aws:iam::aws:policy/AmazonCognitoPowerUser,arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess,arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess,arn:aws:iam::aws:policy/AmazonRoute53FullAccess,arn:aws:iam::aws:policy/AmazonS3FullAccess,arn:aws:iam::aws:policy/AmazonSNSFullAccess,arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess,arn:aws:iam::aws:policy/AWSCertificateManagerPrivateCAFullAccess,arn:aws:iam::aws:policy/AWSCloudTrailFullAccess,arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess,arn:aws:iam::aws:policy/AWSCodeCommitFullAccess,arn:aws:iam::aws:policy/AWSCodeDeployFullAccess,arn:aws:iam::aws:policy/AWSCodePipelineFullAccess,arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser,arn:aws:iam::aws:policy/AWSLambdaFullAccess,arn:aws:iam::aws:policy/SecretsManagerReadWrite"
     }
   },
   "Resources" : {
+    "IamGroupAdmin": {
+      "Type" : "AWS::IAM::Group",
+      "Properties" : {
+          "GroupName" : "littleAdmin",
+          "Path" : "/littleware/account/"
+      }
+    },
+
+    "IamGroupOperator": {
+      "Type" : "AWS::IAM::Group",
+      "Properties" : {
+          "GroupName" : "littleOperator",
+          "Path" : "/littleware/account/"
+        }
+    },
+
+    "IamRoleOperator": {
+      "Type" : "AWS::IAM::Role",
+      "Properties" : {
+          "AssumeRolePolicyDocument" : {
+            "Version" : "2012-10-17",
+            "Statement": [ {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": { "Ref" : "AWS::AccountId" }
+                },
+                "Action": [ "sts:AssumeRole" ]
+            } ]
+          },
+          "MaxSessionDuration" : 3600,
+          "Path" : "/littleware/account/user/",
+          "RoleName" : "littleOperator"
+        }
+    },
+    "IamRoleAdmin": {
+      "Type" : "AWS::IAM::Role",
+      "Properties" : {
+          "AssumeRolePolicyDocument" : {
+            "Version" : "2012-10-17",
+            "Statement": [ {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": { "Ref" : "AWS::AccountId" }
+                },
+                "Action": [ "sts:AssumeRole" ]
+            } ]
+          },
+          "ManagedPolicyArns": [
+              "arn:aws:iam::aws:policy/IAMFullAccess"
+          ],
+          "MaxSessionDuration" : 3600,
+          "Path" : "/littleware/account/user/",
+          "RoleName" : "littleAdmin"
+        }
+    },
     "IamPolicyAssumeAdmin": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
         "Description" : "assume admin policy - at the /account level - do everything",
-        "ManagedPolicyName" : "superAdminMFA",
+        "ManagedPolicyName" : "assumeAdminMFA",
         "Path" : "/littleware/account/",
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
               {
-                  "Effect": "Allow",
-                  "Action": "*",
-                  "Resource": { "Ref": "IamRoleAdmin" },
-                  "Condition": {
-                      "Bool": {
-                          "aws:MultiFactorAuthPresent": "true"
-                      }
-                  }
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "*",
+                "Condition": {
+                    "Bool": {
+                        "aws:MultiFactorAuthPresent": "true"
+                    }
+                }
               }
           ]
-        }
+        },
+        "Groups": [
+          { "Ref" : "IamGroupOperator" }
+        ]
       }
     },
     "IamPolicyAssumeOperator": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
-        "Description" : "super admin policy - at the /account level - do everything - requires MFA - attach to groups not roles",
+        "Description" : "assume operator role policy - at the /account level - do everything - requires MFA - attach to groups not roles",
         "ManagedPolicyName" : "assumeOperatorMFA",
         "Path" : "/littleware/account/",
         "PolicyDocument": {
@@ -50,14 +102,21 @@
               "Statement": [{
                 "Effect": "Allow",
                 "Action": "sts:AssumeRole",
-                "Resource": { "Ref": "IamRoleOperator" },
+                "Resource": [
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/account/user/", { "Ref": "IamRoleOperator" } ]] },
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/app/*" ]] }
+                ],
                 "Condition": {
                       "Bool": {
                           "aws:MultiFactorAuthPresent": "true"
                       }
                   }
               }]
-          }
+          },
+          "Groups": [
+            { "Ref" : "IamGroupAdmin" },
+            { "Ref" : "IamGroupOperator" }
+          ]  
         }
     },
     "IamPolicyLimitRegions": {
@@ -83,28 +142,17 @@
                 }
               }
             ]
-          }
+          },
+          "Groups": [
+            { "Ref" : "IamGroupAdmin" },
+            { "Ref" : "IamGroupOperator" }
+          ],
+          "Roles": [
+            { "Ref" : "IamRoleAdmin" },
+            { "Ref" : "IamRoleOperator" }
+          ]  
         }
     },
-    "IamPolicyCloudFormation": {
-      "Type" : "AWS::IAM::ManagedPolicy",
-      "Properties" : {
-          "Description" : "/account level policy - full cloud-formation access",
-          "ManagedPolicyName" : "LittleFormation",
-          "Path" : "/littleware/account/",
-          "PolicyDocument" : {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Action": ["cloudformation:*"],
-                "Resource": "*"
-              }
-            ]
-          }
-        }
-    },
-
     "IamPolicyRotateKeys": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
@@ -128,71 +176,232 @@
                     "Resource": "arn:aws:iam::*:user/${aws:username}"
                 }
             ]
-          }
+          },
+          "Groups": [
+            { "Ref" : "IamGroupAdmin" },
+            { "Ref" : "IamGroupOperator" }
+          ]  
         }
       },
-
-      "IamGroupAdmin": {
-        "Type" : "AWS::IAM::Group",
+      "IamPolicyAdmin": {
+        "Type" : "AWS::IAM::ManagedPolicy",
         "Properties" : {
-            "GroupName" : "LittleAdmin",
-            "Path" : "/littleware/account/",
-            "ManagedPolicyArns": { "Fn::Split": [",", 
-              { "Fn::Join": [",", [ 
-                { "Ref": "IamPolicyRotateKeys" },
-                { "Ref": "IamPolicyAssumeAdmin" }
-              ]]}
-            ]}
+          "Description" : "admin policy - at the /account level - do everything",
+          "ManagedPolicyName" : "admin",
+          "Path" : "/littleware/account/",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "apigateway:*"
+                ],
+                "Resource": "arn:aws:apigateway:*::/*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "execute-api:Invoke"
+                ],
+                "Resource": "arn:aws:execute-api:*:*:*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "cognito-identity:*",
+                  "cognito-sync:*",
+                  "iam:ListRoles",
+                  "iam:ListOpenIdConnectProviders",
+                  "sns:ListPlatformApplications"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "dynamodb:*",
+                  "iam:ListRoles"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "ecr:*"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "route53:*"
+                ],
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "elasticloadbalancing:DescribeLoadBalancers"
+                ],
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "sns:*"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "acm:*"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "acm-pca:*"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "cloudtrail:*",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "logs:CreateLogGroup"
+                ],
+                "Resource": "arn:aws:logs:*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "iam:PassRole",
+                  "iam:ListRoles",
+                  "iam:GetRolePolicy"
+                ],
+                "Resource": "arn:aws:iam::*"
+              },
+              {
+                "Action": [
+                  "codebuild:*"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "logs:GetLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:logs:*:*:log-group:/aws/codebuild/*:log-stream:*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "codecommit:*"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Action": "codedeploy:*",
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "codepipeline:*",
+                  "iam:ListRoles",
+                  "lambda:GetFunctionConfiguration",
+                  "lambda:ListFunctions"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "kms:CreateAlias",
+                  "kms:CreateKey",
+                  "kms:DeleteAlias",
+                  "kms:Describe*",
+                  "kms:GenerateRandom",
+                  "kms:Get*",
+                  "kms:List*",
+                  "iam:ListGroups",
+                  "iam:ListRoles",
+                  "iam:ListUsers"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "cloudwatch:*",
+                  "dynamodb:*",
+                  "iam:PassRole",
+                  "lambda:*",
+                  "logs:*",
+                  "s3:*"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "secretsmanager:*",
+                  "cloudformation:CreateChangeSet",
+                  "cloudformation:DescribeChangeSet",
+                  "cloudformation:DescribeStackResource",
+                  "cloudformation:DescribeStacks",
+                  "cloudformation:ExecuteChangeSet",
+                  "ec2:DescribeSecurityGroups",
+                  "ec2:DescribeSubnets",
+                  "ec2:DescribeVpcs",
+                  "kms:DescribeKey",
+                  "kms:ListAliases",
+                  "kms:ListKeys",
+                  "lambda:ListFunctions",
+                  "rds:DescribeDBInstances",
+                  "tag:GetResources"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Action": [
+                  "serverlessrepo:CreateCloudFormationChangeSet"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:serverlessrepo:*:*:applications/SecretsManager*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": ["cloudformation:*"],
+                "Resource": "*"
+              }
+            ]
+          },
+          "Roles": [
+            { "Ref" : "IamRoleAdmin" },
+            { "Ref" : "IamRoleOperator" }
+          ]
         }
-      },
-
-      "IamGroupOperator": {
-        "Type" : "AWS::IAM::Group",
-        "Properties" : {
-            "GroupName" : "operator",
-            "Path" : "/littleware/account/",
-            "ManagedPolicyArns": { "Fn::Split": [",", 
-              { "Fn::Join": [",", [ 
-                { "Ref": "IamPolicyRotateKeys" },
-                { "Ref": "IamPolicyAssumeOperator" }
-              ]]}
-            ]}
-          }
-      },
-
-      "IamRoleOperator": {
-        "Type" : "AWS::IAM::Role",
-        "Properties" : {
-            "AssumeRolePolicyDocument" : {},
-            "ManagedPolicyArns": { "Fn::Split": [",", 
-              { "Fn::Join": [",", [ 
-                { "Ref": "AdminPolicyList" },
-                { "Ref": "IamPolicyLimitRegions" }
-              ]]}
-            ]},
-            "MaxSessionDuration" : 3600,
-            "Path" : "/littleware/account/user/",
-            "RoleName" : "LittleOperator"
-          }
-      },
-      "IamRoleAdmin": {
-        "Type" : "AWS::IAM::Role",
-        "Properties" : {
-            "AssumeRolePolicyDocument" : {},
-            "ManagedPolicyArns": { "Fn::Split": [",", 
-              { "Fn::Join": [",", [ 
-                { "Ref": "AdminPolicyList" },
-                { "Ref": "IamPolicyLimitRegions" },
-                { "Ref": "IamPolicyCloudFormation" },
-                "arn:aws:iam::aws:policy/IAMFullAccess"
-              ]]}
-            ]},
-            "MaxSessionDuration" : 3600,
-            "Path" : "/littleware/account/user/",
-            "RoleName" : "LittleOperator"
-          }
       }
-
   },
 
   "Outputs" : {
