@@ -25,9 +25,26 @@ if [[ $# -lt 1 || $1 =~ ^-*h(elp)?$ ]]; then
   exit 1
 fi
 
-create() {
+# 
+# Apply a cloudformation update or create
+#
+# @param commandStr --update or --create
+#
+apply() {
     local reqToken
     local skeleton
+    local commandStr
+
+    if [[ $# -lt 1 || ! $1 =~ ^-*(update|create)$ ]]; then
+      echo "ERROR: apply must specify update or create" 1>&2
+      return 1
+    fi
+    if [[ $1 =~ ^-*update$ ]]; then
+      commandStr="update-stack"
+    else
+      commandStr="create-stack"
+    fi
+    shift
 
     # uniquely identify the update-stack request
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
@@ -78,13 +95,22 @@ EOM
 INFO: attempting to update stack:
 $skeleton
 EOM
-    if aws cloudformation create-stack --cli-input-json "$skeleton"; then
+    if aws cloudformation "${commandStr}" --cli-input-json "$skeleton"; then
     echo "INFO: Successfully submitted stack: $stackName" 1>&2
     fi
 }
 
+create() {
+  apply --create "$@"
+}
+
+
+update() {
+  apply --update "$@"
+}
+
 delete() {
-    aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name "$stackName"
+    #aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name "$stackName"
     aws cloudformation delete-stack --stack-name "$stackName"
 }
 

@@ -18,6 +18,14 @@
       }
     },
 
+    "IamGroupDeveloper": {
+      "Type" : "AWS::IAM::Group",
+      "Properties" : {
+          "GroupName" : "littleDeveloper",
+          "Path" : "/littleware/account/"
+        }
+    },
+
     "IamGroupOperator": {
       "Type" : "AWS::IAM::Group",
       "Properties" : {
@@ -26,6 +34,24 @@
         }
     },
 
+    "IamRoleDeveloper": {
+      "Type" : "AWS::IAM::Role",
+      "Properties" : {
+          "AssumeRolePolicyDocument" : {
+            "Version" : "2012-10-17",
+            "Statement": [ {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": { "Ref" : "AWS::AccountId" }
+                },
+                "Action": [ "sts:AssumeRole" ]
+            } ]
+          },
+          "MaxSessionDuration" : 3600,
+          "Path" : "/littleware/account/user/",
+          "RoleName" : "littleDeveloper"
+        }
+    },
     "IamRoleOperator": {
       "Type" : "AWS::IAM::Role",
       "Properties" : {
@@ -119,6 +145,57 @@
           ]  
         }
     },
+    "IamPolicyAssumeDeveloper": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "assume developer role policy - at the /account level - do everything - requires MFA - attach to groups not roles",
+        "ManagedPolicyName" : "assumeDeveloperMFA",
+        "Path" : "/littleware/account/",
+        "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/account/user/", { "Ref": "IamRoleDeveloper" } ]] },
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/app/*" ]] }
+                ],
+                "Condition": {
+                      "Bool": {
+                          "aws:MultiFactorAuthPresent": "true"
+                      }
+                  }
+              }]
+          },
+          "Groups": [
+            { "Ref" : "IamGroupAdmin" },
+            { "Ref" : "IamGroupOperator" }
+          ]  
+        }
+    },
+    "IamPolicyAssumeService": {
+      "Type" : "AWS::IAM::ManagedPolicy",
+      "Properties" : {
+        "Description" : "assume service roles policy - /app/* path roles - attach to roles not groups",
+        "ManagedPolicyName" : "assumeServiceRoles",
+        "Path" : "/littleware/account/",
+        "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/app/*" ]] }
+                ]
+              }]
+          },
+          "Roles": [
+            { "Ref" : "IamRoleAdmin" },
+            { "Ref" : "IamRoleOperator" },
+            { "Ref" : "IamRoleDeveloper" }
+          ]  
+        }
+    },
     "IamPolicyLimitRegions": {
       "Type" : "AWS::IAM::ManagedPolicy",
       "Properties" : {
@@ -145,11 +222,13 @@
           },
           "Groups": [
             { "Ref" : "IamGroupAdmin" },
-            { "Ref" : "IamGroupOperator" }
+            { "Ref" : "IamGroupOperator" },
+            { "Ref" : "IamGroupDeveloper" }
           ],
           "Roles": [
             { "Ref" : "IamRoleAdmin" },
-            { "Ref" : "IamRoleOperator" }
+            { "Ref" : "IamRoleOperator" },
+            { "Ref" : "IamRoleDeveloper" }
           ]  
         }
     },
@@ -179,7 +258,49 @@
           },
           "Groups": [
             { "Ref" : "IamGroupAdmin" },
-            { "Ref" : "IamGroupOperator" }
+            { "Ref" : "IamGroupOperator" },
+            { "Ref" : "IamGroupDeveloper" }
+          ]  
+        }
+      },
+      "IamPolicyDeveloper": {
+        "Type" : "AWS::IAM::ManagedPolicy",
+        "Properties" : {
+          "Description" : "admin policy - at the /account level - do everything",
+          "ManagedPolicyName" : "admin",
+          "Path" : "/littleware/account/",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "ConsoleAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetAccountPublicAccessBlock",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketPolicyStatus",
+                    "s3:GetBucketPublicAccessBlock",
+                    "s3:ListAllMyBuckets"
+                ],
+                "Resource": "*"
+              },
+              {
+                  "Sid": "ListObjectsInBucket",
+                  "Effect": "Allow",
+                  "Action": "s3:ListBucket",
+                  "Resource": ["arn:aws:s3:::*"]
+              },
+              {
+                  "Sid": "AllObjectActions",
+                  "Effect": "Allow",
+                  "Action": "s3:*Object",
+                  "Resource": ["arn:aws:s3:::*"]
+              }
+            ]
+          },
+          "Roles": [
+            { "Ref" : "IamRoleDeveloper" }
           ]  
         }
       },
@@ -393,6 +514,13 @@
                 "Effect": "Allow",
                 "Action": ["cloudformation:*"],
                 "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  { "Fn::Join": [ "", [ "arn:aws:iam::", { "Ref": "AWS::AccountId" }, ":role/littleware/app/*" ]] }
+                ]
               }
             ]
           },
