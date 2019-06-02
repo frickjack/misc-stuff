@@ -168,8 +168,7 @@
               }]
           },
           "Groups": [
-            { "Ref" : "IamGroupAdmin" },
-            { "Ref" : "IamGroupOperator" }
+            { "Ref" : "IamGroupDeveloper" }
           ]  
         }
     },
@@ -267,7 +266,7 @@
         "Type" : "AWS::IAM::ManagedPolicy",
         "Properties" : {
           "Description" : "admin policy - at the /account level - do everything",
-          "ManagedPolicyName" : "admin",
+          "ManagedPolicyName" : "developer",
           "Path" : "/littleware/account/",
           "PolicyDocument": {
             "Version": "2012-10-17",
@@ -296,6 +295,20 @@
                   "Effect": "Allow",
                   "Action": "s3:*Object",
                   "Resource": ["arn:aws:s3:::*"]
+              },
+              {
+                "Sid": "ManageSecrets",
+                "Effect": "Allow",
+                "Action": "secretsmanager:*",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "iam:ListRoles",
+                  "iam:GetRolePolicy"
+                ],
+                "Resource": "arn:aws:iam::*"
               }
             ]
           },

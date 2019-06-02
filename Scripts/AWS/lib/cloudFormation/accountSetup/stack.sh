@@ -57,7 +57,10 @@ apply() {
 {
     "StackName": "$stackName",
     "TemplateURL": "https://${bucket}.s3.amazonaws.com/accountSetup/IamSetup.json",
-    "TimeoutInMinutes": 5,
+    $(if [[ "$commandStr" == "create-stack" ]]; then 
+        echo '"TimeoutInMinutes": 5,'
+        echo '"EnableTerminationProtection": true,'
+      fi)
     "Capabilities": [
         "CAPABILITY_NAMED_IAM"
     ],
@@ -84,8 +87,7 @@ apply() {
               "Value": "authz-general"
             }
     ],
-    "ClientRequestToken": "$reqToken",
-    "EnableTerminationProtection": true
+    "ClientRequestToken": "$reqToken"
 }
 
 EOM
@@ -125,6 +127,9 @@ case "$command" in
         ;;
     "events")
         aws cloudformation describe-stack-events --stack-name "$stackName"
+        ;;
+    "update")
+        update "$@"
         ;;
     *)
         help
