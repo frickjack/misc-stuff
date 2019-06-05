@@ -1,0 +1,28 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Setup SNS topic for notification, and register a simple e-mail subscriber",
+    "Parameters" : {
+        "email": {
+          "Description" : "e-mail address to receive notifications",
+          "Type": "String",
+          "Default" : "reuben@frickjack.com",
+          "ConstraintDescription" : "must be an e-mail address"
+        }
+    }, 
+    "Resources": {
+        "SnsTopic": {
+            "Type": "AWS::SNS::Topic",
+            "Properties": {
+                "Subscription": [
+                    {
+                        "Endpoint": { "Ref" : "email" },
+                        "Protocol": "email"
+                    }
+                ],
+                "TopicName": "littleNotify"
+            }
+        }
+    },
+    "Metadata": {},
+    "Conditions": {}
+}

@@ -1,0 +1,170 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Setup cloud trail with a logs bucket and cloudwatch logs integration",
+    "Resources": {
+        "S3SharedBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "LoggingConfiguration": {},
+                "AccessControl": "LogDeliveryWrite",
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": true,
+                    "BlockPublicPolicy": true
+                }
+            }
+        },
+        "BucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "S3SharedBucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Principal": {
+                                "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": [
+                                "s3:GetBucketAcl"
+                            ],
+                            "Resource": [
+                                {
+                                    "Fn::GetAtt": [
+                                        "S3SharedBucket",
+                                        "Arn"
+                                    ]
+                                }
+                            ],
+                            "Effect": "Allow",
+                            "Condition": {}
+                        },
+                        {
+                            "Principal": {
+                                "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": [
+                                "s3:PutObject"
+                            ],
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "S3SharedBucket",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/*"
+                                        ]
+                                    ]
+                                }
+                            ],
+                            "Effect": "Allow",
+                            "Condition": {
+                                "StringEquals": {
+                                    "s3:x-amz-acl": "bucket-owner-full-control"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "DependsOn": "S3SharedBucket"
+        },
+        "CloudTrail": {
+            "Type": "AWS::CloudTrail::Trail",
+            "Properties": {
+                "TrailName": "ManagementEventsTrail",
+                "IsLogging": true,
+                "EnableLogFileValidation": true,
+                "EventSelectors": [
+                    {
+                        "IncludeManagementEvents": true,
+                        "ReadWriteType": "All"
+                    }
+                ],
+                "IsMultiRegionTrail": true,
+                "IncludeGlobalServiceEvents": true,
+                "S3BucketName": {
+                    "Ref": "S3SharedBucket"
+                },
+                "CloudWatchLogsLogGroupArn": {
+                    "Fn::GetAtt": [
+                        "CWLogGroupForCloudTrail",
+                        "Arn"
+                    ]
+                },
+                "CloudWatchLogsRoleArn": {
+                    "Fn::GetAtt": [
+                        "IamRoleForCwLogs",
+                        "Arn"
+                    ]
+                }
+            },
+            "DependsOn": [
+                "BucketPolicy"
+            ]
+        },
+        "IamRoleForCwLogs": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "iamRoleCloudTrailToCloudWatchLogs",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "allow-access-to-cw-logs",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "CWLogGroupForCloudTrail": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+                "LogGroupName": "CloudTrailLogs",
+                "RetentionInDays": 90
+            }
+        }
+    },
+    "Parameters": {},
+    "Metadata": {},
+    "Conditions": {}
+}
