@@ -211,11 +211,17 @@
                 "Condition": {
                   "StringNotEquals": {
                     "aws:RequestedRegion": [
-                      "eu-central-1",
-                      "eu-west-1"
+                      "us-central-1",
+                      "us-east-1"
                     ]
                   }
                 }
+              },
+              {
+                "Effect": "Deny",
+                "Action": "*",
+                "Resource": "*",
+                "Condition": {"Bool": {"aws:SecureTransport": "false"}}
               }
             ]
           },
