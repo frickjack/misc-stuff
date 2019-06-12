@@ -16,91 +16,75 @@ accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"
 # lib ------------------------
 
 help() {
-    echo "Use: bash stack.sh bucket|create|delete|events path/to/template" 1>&2
+    echo "Use: bash stack.sh bucket|create|delete|events|list path/to/template path/to/stack.parameters.json" 1>&2
 }
 
 # 
 # Apply a cloudformation update or create
 #
 # @param commandStr --update or --create
+# @param templatePath
+# @param stackPath
 #
 apply() {
     local reqToken
     local skeleton
     local commandStr
-    local path
+    local templatePath
+    local stackPath
     local stackName
     local s3Path
 
     if [[ $# -lt 3 || ! $1 =~ ^-*(update|create)$ ]]; then
-      echo "ERROR: apply must specify update or create" 1>&2
-      return 1
+        echo "ERROR: apply must specify update or create" 1>&2
+        return 1
     fi
     if [[ $1 =~ ^-*update$ ]]; then
-      commandStr="update-stack"
+        commandStr="update-stack"
+    elif [[ "$1" =~ ^-*create$ ]]; then
+        commandStr="create-stack"
     else
-      commandStr="create-stack"
+        echo "ERROR: invalid apply command: $@" 1>&2
+        return 1
     fi
     shift
-    path="$1"
+    templatePath="$1"
     shift
-    stackName="$1"
+    stackPath="$1"
     shift
-    s3Path="cf/$stackName/${path##*/}"
+    if [[ ! -f "$templatePath" ]]; then
+        echo "ERROR: unable to load template $templatePath" 1>&2
+        return 1
+    fi
+    if [[ ! -f "$stackPath" || ! stackName="$(jq -r -e .StackName < "$stackPath")" ]]; then
+        echo "ERROR: unable to load stackName from $stackPath" 1>&2
+        return 1
+    fi
+    s3Path="cf/$stackName/${templatePath##*/}"
    
     # uniquely identify the update-stack request
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
 
-    aws cloudformation validate-template --template-body "$(cat "$path")"
-    aws s3 cp "$path" "s3://${bucket}/$s3Path"
+    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+    aws s3 cp "$templatePath" "s3://${bucket}/$s3Path"
 
     skeleton="$(
-        cat - <<EOM
-{
-    "StackName": "$stackName",
-    "TemplateURL": "https://${bucket}.s3.amazonaws.com/${s3Path}",
-    $(if [[ "$commandStr" == "create-stack" ]]; then 
-        echo '"TimeoutInMinutes": 5,'
-        echo '"EnableTerminationProtection": true,'
-      fi)
-    "Capabilities": [
-        "CAPABILITY_NAMED_IAM"
-    ],
-    "StackPolicyBody": "{\"Statement\" : [{\"Effect\" : \"Allow\", \"Action\" : \"Update:*\", \"Principal\": \"*\", \"Resource\" : \"*\"}]}",
-    "Tags": [
-            {
-                "Key": "org",
-                "Value": "devops"
-            },
-            {
-                "Key": "project",
-                "Value": "infrastructure"
-            },
-            {
-                "Key": "stack",
-                "Value": "main"
-            },
-            {
-                "Key": "stage",
-                "Value": "prod"
-            },
-            {
-              "Key": "role",
-              "Value": "authz-general"
-            }
-    ],
-    "ClientRequestToken": "$reqToken"
-}
-
-EOM
+        cat "$stackPath" | \
+        jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \
+        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token'    
     )"
-
+    if [[ "$commandStr" == "update-stack" ]]; then
+        if ! skeleton="$(echo "$skeleton" | jq -r -e 'del(.TimeoutInMinutes) | del(.EnableTerminationProtection)')"; then
+            echo "ERROR: failed to process $skeleton" 1>&2
+            return 1
+        fi
+    fi
     cat - 1>&2 <<EOM
 INFO: attempting to update stack:
 $skeleton
 EOM
     if aws cloudformation "${commandStr}" --cli-input-json "$skeleton"; then
-    echo "INFO: Successfully submitted stack: $stackName" 1>&2
+      echo "INFO: Successfully submitted stack: $stackName" 1>&2
     fi
 }
 
@@ -114,26 +98,66 @@ update() {
 }
 
 delete() {
+    local stackPath
+    local stackName
+
+    while [[ $# -gt 0 ]]; do
+      stackPath="$1"
+      shift
+    done
+    
+    if [[ ! -f "$stackPath" ]] || ! stackName="$(jq -e -r .StackName < "$stackPath")"; then
+      echo "ERROR: unable to load name from stack skeleton: $stackPath" 1>&2
+      return 1
+    fi
     #aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name "$stackName"
     aws cloudformation delete-stack --stack-name "$stackName"
 }
 
-#
-# Generate a stack name from a json/yaml template path
-#
-pathToStack() {
-    local path
-    local base
-    if [[ $# -lt 1 ]]; then
-      echo "ERROR: pathToStack takes a path" 1>&2
+
+events() {
+    local stackPath
+    local stackName
+
+    while [[ $# -gt 0 ]]; do
+      stackPath="$1"
+      shift
+    done
+    
+    if [[ ! -f "$stackPath" ]] || ! stackName="$(jq -e -r .StackName < "$stackPath")"; then
+      echo "ERROR: unable to load name from stack skeleton: $stackPath" 1>&2
       return 1
     fi
-    path="$1"
-    shift
-    base="${path##*/}"   # get basename
-    base="${base%.*}"    # remove .json/.yaml
-    base="${base,[A-Z]}" # first character lower case
-    echo "little-account-${base}-${accountId}"
+    aws cloudformation describe-stack-events --stack-name "$stackName"
+}
+
+
+list() {
+    local cliInput
+    cliInput="$(cat - <<EOM
+{
+    "StackStatusFilter": [
+            "ROLLBACK_IN_PROGRESS",
+            "CREATE_IN_PROGRESS",
+            "CREATE_COMPLETE",
+            "ROLLBACK_IN_PROGRESS",
+            "ROLLBACK_FAILED",
+            "ROLLBACK_COMPLETE",
+            "DELETE_IN_PROGRESS",
+            "DELETE_FAILED",
+            "UPDATE_IN_PROGRESS",
+            "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+            "UPDATE_COMPLETE",
+            "UPDATE_ROLLBACK_IN_PROGRESS",
+            "UPDATE_ROLLBACK_FAILED",
+            "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS",
+            "UPDATE_ROLLBACK_COMPLETE",
+            "REVIEW_IN_PROGRESS"
+    ]
+}
+EOM
+    )";
+    aws cloudformation list-stacks --cli-input-json "${cliInput}"
 }
 
 # main -----------------
@@ -146,33 +170,24 @@ fi
 command="$1"
 shift
 
-if [[ "$command" != "bucket" ]]; then
-    path="$1"
-    shift
-
-    if [[ -z "$path" || ! -f "$path" ]]; then
-        echo "ERROR: run apply.sh within the accounSetup/ folder" 1>&2
-        exit 1
-    fi
-
-    stackName="$(pathToStack "$path")"
-fi
-
 case "$command" in
     "bucket")
         echo "$bucket"
         ;;
     "create")
-        create "$path" "$stackName"
+        create "$@"
         ;;
     "delete")
-        delete "$path" "$stackName"
+        delete "$@"
         ;;
     "events")
-        aws cloudformation describe-stack-events --stack-name "$stackName"
+        events "$@"
+        ;;
+    "list")
+        list "$@"
         ;;
     "update")
-        update "$path" "$stackName"
+        update "$@"
         ;;
     *)
         help

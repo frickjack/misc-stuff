@@ -2,8 +2,8 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Copied from https://asecure.cloud/a/cwalarm_iam_user_changes/",
     "Parameters" : {
-        "email": {
-          "Description" : "e-mail to attach to SNS topic",
+        "snsNotifyTopic": {
+          "Description" : "ARN of SNS topic to notify on",
           "Type": "String",
           "Default" : "reuben@frickjack.com",
           "ConstraintDescription" : "must be an e-mail address"

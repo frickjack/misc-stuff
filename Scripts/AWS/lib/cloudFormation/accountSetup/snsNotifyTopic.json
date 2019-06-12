@@ -5,7 +5,6 @@
         "email": {
           "Description" : "e-mail address to receive notifications",
           "Type": "String",
-          "Default" : "reuben@frickjack.com",
           "ConstraintDescription" : "must be an e-mail address"
         }
     }, 

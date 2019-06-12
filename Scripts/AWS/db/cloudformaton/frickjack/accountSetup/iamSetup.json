@@ -1,0 +1,36 @@
+{
+    "StackName": "little-account-iamSetup-frickjack",
+    "Capabilities": [
+        "CAPABILITY_NAMED_IAM"
+    ],
+    "TimeoutInMinutes": 5,
+    "EnableTerminationProtection": true,
+    "Parameters" : [
+        {
+            "ParameterKey": "RegionList",
+            "ParameterValue": "us-east-1,us-east-2"
+        }
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "devops"
+            },
+            {
+                "Key": "project",
+                "Value": "infrastructure"
+            },
+            {
+                "Key": "stack",
+                "Value": "main"
+            },
+            {
+                "Key": "stage",
+                "Value": "prod"
+            },
+            {
+              "Key": "role",
+              "Value": "authz-general"
+            }
+    ]
+}

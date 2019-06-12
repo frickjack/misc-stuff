@@ -22,5 +22,26 @@ stack can be deployed.
 
 ex:
 ```
-bash AWS/bin/accountBootstrap.sh
+arun accountBootstrap
 ```
+
+### arun stack
+
+* `arun stack create`
+* `arun stack update`
+* `arun stack events`
+* `arun stack list`
+
+## Account Hidration
+
+* Authz - IAM setup
+
+```
+arun stack create lib/cloudFormation/accountSetup/iamSetup.json db/cloudformaton/frickjack/accountSetup/iamSetup.json
+```
+
+* Notification - SNS setup
+
+```
+ arun stack events lib/cloudFormation/accountSetup/snsNotifyTopic.json db/cloudformaton/frickjack/accountSetup/snsNotify.json
+ ```

@@ -113,7 +113,7 @@
           ]
         },
         "Groups": [
-          { "Ref" : "IamGroupOperator" }
+          { "Ref" : "IamGroupAdmin" }
         ]
       }
     },
@@ -211,7 +211,7 @@
                 "Condition": {
                   "StringNotEquals": {
                     "aws:RequestedRegion": [
-                      "us-central-1",
+                      "us-east-2",
                       "us-east-1"
                     ]
                   }
