@@ -1,6 +1,13 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Setup cloud trail with a logs bucket and cloudwatch logs integration",
+    "Parameters" : {
+        "bucketName": {
+          "Description" : "bucket for cloudtrail logs",
+          "Type": "String",
+          "ConstraintDescription" : "must be a valid S3 name"
+        }
+    },
     "Resources": {
         "S3SharedBucket": {
             "Type": "AWS::S3::Bucket",
@@ -19,7 +26,39 @@
                 "PublicAccessBlockConfiguration": {
                     "BlockPublicAcls": true,
                     "BlockPublicPolicy": true
-                }
+                },
+                "BucketName": { "Ref": "bucketName" },
+                "LifecycleConfiguration": {
+                    "Rules": [
+                        {
+                            "Id": "ExpirationRule",
+                            "Status": "Enabled",
+                            "ExpirationInDays": 120
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "org",
+                        "Value": "devops"
+                    },
+                    {
+                        "Key": "project",
+                        "Value": "infrastructure"
+                    },
+                    {
+                        "Key": "stack",
+                        "Value": "main"
+                    },
+                    {
+                        "Key": "stage",
+                        "Value": "prod"
+                    },
+                    {
+                      "Key": "role",
+                      "Value": "monitoring"
+                    }
+                ]
             }
         },
         "BucketPolicy": {
@@ -94,7 +133,7 @@
                 "EventSelectors": [
                     {
                         "IncludeManagementEvents": true,
-                        "ReadWriteType": "All"
+                        "ReadWriteType": "WriteOnly"
                     }
                 ],
                 "IsMultiRegionTrail": true,
@@ -113,7 +152,29 @@
                         "IamRoleForCwLogs",
                         "Arn"
                     ]
-                }
+                },
+                "Tags": [
+                    {
+                        "Key": "org",
+                        "Value": "devops"
+                    },
+                    {
+                        "Key": "project",
+                        "Value": "infrastructure"
+                    },
+                    {
+                        "Key": "stack",
+                        "Value": "main"
+                    },
+                    {
+                        "Key": "stage",
+                        "Value": "prod"
+                    },
+                    {
+                      "Key": "role",
+                      "Value": "monitoring"
+                    }
+                ]
             },
             "DependsOn": [
                 "BucketPolicy"
@@ -164,7 +225,6 @@
             }
         }
     },
-    "Parameters": {},
     "Metadata": {},
     "Conditions": {}
 }

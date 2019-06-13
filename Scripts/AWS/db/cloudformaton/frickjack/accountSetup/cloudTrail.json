@@ -1,0 +1,35 @@
+{
+    "StackName": "little-account-cloudTrailManagement-frickjack",
+    "Capabilities": [
+        "CAPABILITY_NAMED_IAM"
+    ],
+    "TimeoutInMinutes": 5,
+    "Parameters" : [
+        {
+            "ParameterKey": "bucketName",
+            "ParameterValue": "cloudtrail-management-frickjack"
+        }
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "devops"
+            },
+            {
+                "Key": "project",
+                "Value": "infrastructure"
+            },
+            {
+                "Key": "stack",
+                "Value": "main"
+            },
+            {
+                "Key": "stage",
+                "Value": "prod"
+            },
+            {
+              "Key": "role",
+              "Value": "monitoring"
+            }
+    ]
+}
