@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LITTLE_SETUP_DIR=$(dirname "${BASH_SOURCE:-$0}")  # $0 supports zsh
-LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
+export LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
 
 
 #
@@ -99,6 +99,4 @@ arun() {
     return $?
 }
 
-if [[ -z "$GEN3_SOURCE_ONLY" ]]; then
-  arun "$@"
-fi
+arun "$@"
