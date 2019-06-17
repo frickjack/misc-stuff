@@ -1,0 +1,32 @@
+{
+    "StackName": "little-account-iamAlarm-frickjack",
+    "TimeoutInMinutes": 5,
+    "Parameters" : [
+        {
+            "ParameterKey": "snsTopicArn",
+            "ParameterValue": "arn:aws:sns:us-east-2:027326493842:littleNotify"
+        }
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "devops"
+            },
+            {
+                "Key": "project",
+                "Value": "infrastructure"
+            },
+            {
+                "Key": "stack",
+                "Value": "main"
+            },
+            {
+                "Key": "stage",
+                "Value": "prod"
+            },
+            {
+              "Key": "role",
+              "Value": "monitoring"
+            }
+    ]
+}

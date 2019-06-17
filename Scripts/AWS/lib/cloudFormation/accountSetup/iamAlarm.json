@@ -2,26 +2,13 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Copied from https://asecure.cloud/a/cwalarm_iam_user_changes/",
     "Parameters" : {
-        "snsNotifyTopic": {
+        "snsTopicArn": {
           "Description" : "ARN of SNS topic to notify on",
           "Type": "String",
-          "Default" : "reuben@frickjack.com",
-          "ConstraintDescription" : "must be an e-mail address"
+          "ConstraintDescription" : "must be a valid SNS topic ARN"
         }
     },
     "Resources": {
-        "SnsTopic": {
-            "Type": "AWS::SNS::Topic",
-            "Properties": {
-                "Subscription": [
-                    {
-                        "Endpoint": { "Ref": "email" },
-                        "Protocol": "email"
-                    }
-                ],
-                "TopicName": "alarm-action"
-            }
-        },
         "CloudWatchAlarm": {
             "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
@@ -36,7 +23,7 @@
                 "ComparisonOperator": "GreaterThanOrEqualToThreshold",
                 "AlarmActions": [
                     {
-                        "Ref": "SnsTopic"
+                        "Ref": "snsTopicArn"
                     }
                 ],
                 "TreatMissingData": "notBreaching"
@@ -45,7 +32,7 @@
         "MetricFilter": {
             "Type": "AWS::Logs::MetricFilter",
             "Properties": {
-                "LogGroupName": "",
+                "LogGroupName": "CloudTrailLogs",
                 "FilterPattern": "{($.eventName=AddUserToGroup)||($.eventName=ChangePassword)||($.eventName=CreateAccessKey)||($.eventName=CreateUser)||($.eventName=UpdateAccessKey)||($.eventName=UpdateGroup)||($.eventName=UpdateUser)||($.eventName=AttachGroupPolicy)||($.eventName=AttachUserPolicy)||($.eventName=DeleteUserPolicy)||($.eventName=DetachGroupPolicy)||($.eventName=DetachUserPolicy)||($.eventName=PutUserPolicy)}",
                 "MetricTransformations": [
                     {

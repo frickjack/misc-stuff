@@ -84,6 +84,7 @@
             } ]
           },
           "ManagedPolicyArns": [
+              "arn:aws:iam::aws:policy/AWSCloudTrailFullAccess",
               "arn:aws:iam::aws:policy/IAMFullAccess"
           ],
           "MaxSessionDuration" : 3600,
@@ -418,7 +419,14 @@
               },
               {
                 "Effect": "Allow",
-                "Action": "cloudtrail:*",
+                "Action": [
+                    "cloudtrail:GetTrailStatus",
+                    "cloudtrail:DescribeTrails",
+                    "cloudtrail:LookupEvents",
+                    "cloudtrail:ListTags",
+                    "cloudtrail:ListPublicKeys",
+                    "cloudtrail:GetEventSelectors"
+                ],
                 "Resource": "*"
               },
               {
@@ -494,6 +502,8 @@
                 "Action": [
                   "cloudwatch:*",
                   "dynamodb:*",
+                  "events:*",
+                  "guardduty:*",
                   "iam:PassRole",
                   "lambda:*",
                   "logs:*",
@@ -502,6 +512,16 @@
                 "Resource": "*"
               },
               {
+                "Effect": "Allow",
+                "Action": "iam:CreateServiceLinkedRole",
+                "Resource": "*",
+                "Condition": {
+                    "StringLike": {
+                        "iam:AWSServiceName": "guardduty.amazonaws.com"
+                    }
+                }
+            },
+            {
                 "Action": [
                   "secretsmanager:*",
                   "cloudformation:CreateChangeSet",

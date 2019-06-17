@@ -20,6 +20,31 @@
                 ],
                 "TopicName": "littleNotify"
             }
+        },
+        "SnsTopicPolicy": {
+            "Type": "AWS::SNS::TopicPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Sid": "TrustCWEToPublishEventsToMyTopic",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "events.amazonaws.com"
+                            },
+                            "Action": "sns:Publish",
+                            "Resource": {
+                                "Ref": "SnsTopic"
+                            }
+                        }
+                    ]
+                },
+                "Topics": [
+                    {
+                        "Ref": "SnsTopic"
+                    }
+                ]
+            }
         }
     },
     "Metadata": {},
