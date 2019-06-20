@@ -312,8 +312,9 @@
               {
                 "Effect": "Allow",
                 "Action": [
-                  "iam:ListRoles",
-                  "iam:GetRolePolicy"
+                  "iam:PassRole",
+                  "iam:List*",
+                  "iam:Get*"
                 ],
                 "Resource": "arn:aws:iam::*"
               }
@@ -350,37 +351,23 @@
               {
                 "Effect": "Allow",
                 "Action": [
+                    "aws-portal:ViewBilling",
+                    "aws-portal:ModifyBilling",
+                    "budgets:ViewBudget",
+                    "budgets:ModifyBudget"
+                ],
+                "Resource": [
+                    "*"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
                   "cognito-identity:*",
                   "cognito-sync:*",
-                  "iam:ListRoles",
-                  "iam:ListOpenIdConnectProviders",
                   "sns:ListPlatformApplications"
                 ],
                 "Resource": "*"
-              },
-              {
-                "Action": [
-                  "dynamodb:*",
-                  "iam:ListRoles"
-                ],
-                "Effect": "Allow",
-                "Resource": "*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "ecr:*"
-                ],
-                "Resource": "*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "route53:*"
-                ],
-                "Resource": [
-                  "*"
-                ]
               },
               {
                 "Effect": "Allow",
@@ -440,8 +427,8 @@
                 "Effect": "Allow",
                 "Action": [
                   "iam:PassRole",
-                  "iam:ListRoles",
-                  "iam:GetRolePolicy"
+                  "iam:Get*",
+                  "iam:List*"
                 ],
                 "Resource": "arn:aws:iam::*"
               },
@@ -474,7 +461,6 @@
               {
                 "Action": [
                   "codepipeline:*",
-                  "iam:ListRoles",
                   "lambda:GetFunctionConfiguration",
                   "lambda:ListFunctions"
                 ],
@@ -490,10 +476,7 @@
                   "kms:Describe*",
                   "kms:GenerateRandom",
                   "kms:Get*",
-                  "kms:List*",
-                  "iam:ListGroups",
-                  "iam:ListRoles",
-                  "iam:ListUsers"
+                  "kms:List*"
                 ],
                 "Resource": "*"
               },
@@ -502,11 +485,13 @@
                 "Action": [
                   "cloudwatch:*",
                   "dynamodb:*",
+                  "ecr:*",
                   "events:*",
                   "guardduty:*",
                   "iam:PassRole",
                   "lambda:*",
                   "logs:*",
+                  "route53:*",
                   "s3:*"
                 ],
                 "Resource": "*"

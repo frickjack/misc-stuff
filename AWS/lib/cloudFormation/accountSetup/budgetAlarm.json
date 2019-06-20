@@ -1,0 +1,45 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "alert if projected budget exceeds limit",
+    "Parameters": {
+        "snsTopicArn": {
+          "Description" : "ARN of SNS topic to notify on",
+          "Type": "String",
+          "ConstraintDescription" : "must be a valid SNS topic ARN"
+        }
+    },
+    "Resources": {
+        "Budget": {
+            "Type": "AWS::Budgets::Budget",
+            "Properties": {
+                "Budget": {
+                    "BudgetName": "Cost Budget",
+                    "BudgetType": "COST",
+                    "BudgetLimit": {
+                        "Amount": "10",
+                        "Unit": "USD"
+                    },
+                    "TimeUnit": "MONTHLY"
+                },
+                "NotificationsWithSubscribers": [
+                    {
+                        "Notification": {
+                            "NotificationType": "ACTUAL",
+                            "ComparisonOperator": "GREATER_THAN",
+                            "Threshold": "80",
+                            "ThresholdType": "PERCENTAGE"
+                        },
+                        "Subscribers": [
+                            {
+                                "SubscriptionType": "SNS",
+                                "Address": { "Ref": "snsTopicArn" }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "Metadata": {},
+    "Conditions": {}
+}

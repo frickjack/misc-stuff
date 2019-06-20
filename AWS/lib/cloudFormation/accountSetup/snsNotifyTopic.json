@@ -36,6 +36,17 @@
                             "Resource": {
                                 "Ref": "SnsTopic"
                             }
+                        },
+                        {
+                            "Sid": "TrustBudgetsToPublishEventsToMyTopic",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "budgets.amazonaws.com"
+                            },
+                            "Action": "sns:Publish",
+                            "Resource": {
+                                "Ref": "SnsTopic"
+                            }
                         }
                     ]
                 },
