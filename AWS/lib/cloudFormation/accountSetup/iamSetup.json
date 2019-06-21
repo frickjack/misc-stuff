@@ -304,6 +304,19 @@
                   "Resource": ["arn:aws:s3:::*"]
               },
               {
+                "Action": [
+                    "logs:Describe*",
+                    "logs:Get*",
+                    "logs:List*",
+                    "logs:StartQuery",
+                    "logs:StopQuery",
+                    "logs:TestMetricFilter",
+                    "logs:FilterLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
                 "Sid": "ManageSecrets",
                 "Effect": "Allow",
                 "Action": "secretsmanager:*",
@@ -334,13 +347,6 @@
           "PolicyDocument": {
             "Version": "2012-10-17",
             "Statement": [
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "apigateway:*"
-                ],
-                "Resource": "arn:aws:apigateway:*::/*"
-              },
               {
                 "Effect": "Allow",
                 "Action": [
@@ -384,13 +390,6 @@
                 "Resource": "*"
               },
               {
-                "Action": [
-                  "sns:*"
-                ],
-                "Effect": "Allow",
-                "Resource": "*"
-              },
-              {
                 "Effect": "Allow",
                 "Action": [
                   "acm:*"
@@ -419,53 +418,11 @@
               {
                 "Effect": "Allow",
                 "Action": [
-                  "logs:CreateLogGroup"
-                ],
-                "Resource": "arn:aws:logs:*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
                   "iam:PassRole",
                   "iam:Get*",
                   "iam:List*"
                 ],
                 "Resource": "arn:aws:iam::*"
-              },
-              {
-                "Action": [
-                  "codebuild:*"
-                ],
-                "Effect": "Allow",
-                "Resource": "*"
-              },
-              {
-                "Action": [
-                  "logs:GetLogEvents"
-                ],
-                "Effect": "Allow",
-                "Resource": "arn:aws:logs:*:*:log-group:/aws/codebuild/*:log-stream:*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "codecommit:*"
-                ],
-                "Resource": "*"
-              },
-              {
-                "Action": "codedeploy:*",
-                "Effect": "Allow",
-                "Resource": "*"
-              },
-              {
-                "Action": [
-                  "codepipeline:*",
-                  "lambda:GetFunctionConfiguration",
-                  "lambda:ListFunctions"
-                ],
-                "Effect": "Allow",
-                "Resource": "*"
               },
               {
                 "Effect": "Allow",
@@ -483,7 +440,12 @@
               {
                 "Effect": "Allow",
                 "Action": [
+                  "apigateway:*",
+                  "codebuild:*",
+                  "codedeploy:*",
                   "cloudwatch:*",
+                  "codecommit:*",
+                  "codepipeline:*",
                   "dynamodb:*",
                   "ecr:*",
                   "events:*",
@@ -491,8 +453,11 @@
                   "iam:PassRole",
                   "lambda:*",
                   "logs:*",
+                  "resource-groups:*",
                   "route53:*",
-                  "s3:*"
+                  "sns:*",
+                  "s3:*",
+                  "tag:*"   
                 ],
                 "Resource": "*"
               },
