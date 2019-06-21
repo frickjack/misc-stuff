@@ -279,29 +279,14 @@
             "Version": "2012-10-17",
             "Statement": [
               {
-                "Sid": "ConsoleAccess",
+                "Sid": "S3ConsoleAccess",
                 "Effect": "Allow",
                 "Action": [
-                    "s3:GetAccountPublicAccessBlock",
-                    "s3:GetBucketAcl",
-                    "s3:GetBucketLocation",
-                    "s3:GetBucketPolicyStatus",
-                    "s3:GetBucketPublicAccessBlock",
-                    "s3:ListAllMyBuckets"
+                    "s3:Get*",
+                    "s3:List*",
+                    "s3:*Object"
                 ],
                 "Resource": "*"
-              },
-              {
-                  "Sid": "ListObjectsInBucket",
-                  "Effect": "Allow",
-                  "Action": "s3:ListBucket",
-                  "Resource": ["arn:aws:s3:::*"]
-              },
-              {
-                  "Sid": "AllObjectActions",
-                  "Effect": "Allow",
-                  "Action": "s3:*Object",
-                  "Resource": ["arn:aws:s3:::*"]
               },
               {
                 "Action": [
@@ -318,8 +303,12 @@
               },
               {
                 "Sid": "ManageSecrets",
+                "Action": [
+                  "secretsmanager:*",
+                  "sns:List*",
+                  "sns:Publish"
+                ],
                 "Effect": "Allow",
-                "Action": "secretsmanager:*",
                 "Resource": "*"
               },
               {
@@ -386,25 +375,6 @@
               },
               {
                 "Effect": "Allow",
-                "Action": "s3:*",
-                "Resource": "*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "acm:*"
-                ],
-                "Resource": "*"
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "acm-pca:*"
-                ],
-                "Resource": "*"
-              },
-              {
-                "Effect": "Allow",
                 "Action": [
                     "cloudtrail:GetTrailStatus",
                     "cloudtrail:DescribeTrails",
@@ -440,6 +410,8 @@
               {
                 "Effect": "Allow",
                 "Action": [
+                  "acm:*",
+                  "acm-pca:*",
                   "apigateway:*",
                   "codebuild:*",
                   "codedeploy:*",
@@ -455,6 +427,7 @@
                   "logs:*",
                   "resource-groups:*",
                   "route53:*",
+                  "secretsmanager:*",
                   "sns:*",
                   "s3:*",
                   "tag:*"   
@@ -473,7 +446,6 @@
             },
             {
                 "Action": [
-                  "secretsmanager:*",
                   "cloudformation:CreateChangeSet",
                   "cloudformation:DescribeChangeSet",
                   "cloudformation:DescribeStackResource",

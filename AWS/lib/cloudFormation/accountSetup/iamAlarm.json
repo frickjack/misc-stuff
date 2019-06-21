@@ -12,8 +12,8 @@
         "CloudWatchAlarm": {
             "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
-                "AlarmName": "iam_user_changes",
-                "AlarmDescription": "A CloudWatch Alarm that triggers when changes are made to IAM users. Events include IAM user creation/deletion/update operations, updating IAM user passwords or Access Keys, as well as attaching/detaching policies from IAM users or groups.",
+                "AlarmName": "iam_changes",
+                "AlarmDescription": "Alarm on IAM changes",
                 "MetricName": "IAMPolicyEventCount",
                 "Namespace": "CloudTrailMetrics",
                 "Statistic": "Sum",
@@ -33,7 +33,7 @@
             "Type": "AWS::Logs::MetricFilter",
             "Properties": {
                 "LogGroupName": "CloudTrailLogs",
-                "FilterPattern": "{($.eventName=AddUserToGroup)||($.eventName=ChangePassword)||($.eventName=CreateAccessKey)||($.eventName=CreateUser)||($.eventName=UpdateAccessKey)||($.eventName=UpdateGroup)||($.eventName=UpdateUser)||($.eventName=AttachGroupPolicy)||($.eventName=AttachUserPolicy)||($.eventName=DeleteUserPolicy)||($.eventName=DetachGroupPolicy)||($.eventName=DetachUserPolicy)||($.eventName=PutUserPolicy)}",
+                "FilterPattern": "{ ( ($.eventSource = \"iam.amazonaws.com\") && (($.eventName = \"Add*\") || ($.eventName = \"Attach*\") || ($.eventName = \"Change*\") || ($.eventName = \"Create*\") || ($.eventName = \"Deactivate*\") || ($.eventName = \"Delete*\") || ($.eventName = \"Detach*\") || ($.eventName = \"Enable*\") || ($.eventName = \"Put*\") || ($.eventName = \"Remove*\") || ($.eventName = \"Set*\") || ($.eventName = \"Update*\") || ($.eventName = \"Upload*\")) ) }",
                 "MetricTransformations": [
                     {
                         "MetricValue": "1",

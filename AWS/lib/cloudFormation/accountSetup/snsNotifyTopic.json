@@ -27,6 +27,48 @@
                 "PolicyDocument": {
                     "Statement": [
                         {
+                            "Sid": "__default_statement_ID",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "*"
+                            },
+                            "Action": [
+                                "sns:GetTopicAttributes",
+                                "sns:Subscribe",
+                                "sns:ListSubscriptionsByTopic",
+                                "sns:Publish",
+                                "sns:Receive"
+                            ],
+                            "Resource": {
+                                "Ref": "SnsTopic"
+                            },
+                            "Condition": {
+                                "StringEquals": {
+                                    "AWS:SourceOwner": {
+                                        "Ref": "AWS::AccountId"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Sid": "TrustAccountToPublishEvents",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "*"
+                            },
+                            "Action": "sns:Publish",
+                            "Resource": {
+                                "Ref": "SnsTopic"
+                            },
+                            "Condition":{
+                                "StringEquals":{
+                                   "AWS:SourceAccount":{
+                                        "Ref": "AWS::AccountId"
+                                    }
+                                 }
+                             }
+                        },
+                        {
                             "Sid": "TrustCWEToPublishEventsToMyTopic",
                             "Effect": "Allow",
                             "Principal": {
