@@ -16,7 +16,7 @@ accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"
 # lib ------------------------
 
 help() {
-    echo "Use: bash stack.sh bucket|create|delete|events|list path/to/template path/to/stack.parameters.json" 1>&2
+    bash "$LITTLE_HOME/bin/help.sh" stack
 }
 
 # 
@@ -160,6 +160,17 @@ EOM
     aws cloudformation list-stacks --cli-input-json "${cliInput}"
 }
 
+validate() {
+    local templatePath
+    if [[ $# -lt 1 ]]; then
+      echo "ERROR: validate requires path to template" 1>&2
+      return 1
+    fi
+    templatePath="$1"
+    shift
+    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+}
+
 # main -----------------
 
 if [[ $# -lt 1 || $1 =~ ^-*h(elp)?$ ]]; then
@@ -188,6 +199,9 @@ case "$command" in
         ;;
     "update")
         update "$@"
+        ;;
+    "validte")
+        validate "$@"
         ;;
     *)
         help

@@ -1,13 +1,27 @@
 #!/bin/bash
 
+README="$LITTLE_HOME/doc/README.md"
+detail="$1"
+PAGER="${PAGER:-less}"
 
-help() {
-    cat - <<EOM
-Use: arun [--profile PROFILE] command ...
-EOM
-    ls -1 "${LITTLE_HOME}/bin/" | sed -e 's/.sh$//'
+open() {
+  local filePath="$1"
+  cat - "$filePath" <<< "$filePath" | $PAGER
 }
-
-if [[ -z "$GEN3_SOURCE_ONLY" ]]; then
-  help "$@"
+if [[ -z "$detail" ]]; then
+  open "$README"
+  exit $?
 fi
+
+# Try to find an exact match
+filePath="$(find "$LITTLE_HOME/doc" -name "${detail}.md" -print | head -1)"
+if [[ -n "$filePath" ]]; then
+  open "$filePath"
+  exit $?
+fi
+
+# Try to help the user find what she wants
+echo "Could not find ${detail}.md under $LITTLE_HOME/doc"
+echo --------------
+echo grep "$README"
+grep "$detail" "$README"

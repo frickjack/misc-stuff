@@ -14,7 +14,8 @@ export LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
 #
 arun() {
     if [[ $# -lt 1 || "$1" =~ ^-*help$ ]]; then
-      bash "$LITTLE_HOME/bin/help.sh"
+      shift
+      bash "$LITTLE_HOME/bin/help.sh" "$@"
       return 1
     fi
     if [[ "$1" == "profiles" ]]; then
