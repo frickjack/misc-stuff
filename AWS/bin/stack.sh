@@ -200,7 +200,7 @@ case "$command" in
     "update")
         update "$@"
         ;;
-    "validte")
+    "validate")
         validate "$@"
         ;;
     *)

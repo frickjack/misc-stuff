@@ -29,3 +29,11 @@ Retrieve the event log for a stack
 ```
 arun stack update path/to/template path/to/cli-parameters.json
 ```
+
+* validate
+
+Validate a cloudformation template
+
+```
+arun stack validate path/to/template
+```
