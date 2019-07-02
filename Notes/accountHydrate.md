@@ -1,13 +1,13 @@
 # TL;DR
 
 So you just got your brand spankin' new AWS account, and your team is launching like a rocket into the cloud.
-How should you setup this thing?
-Before you start playing with EC2 instances
+How should you set this account thing up?
+Before playing with EC2 instances
 and S3 buckets and all the other toys at the application layer of the stack; 
-you should figure out how you want to authenticate and
-authorize and monitor users manipulating your base cloud infrastructure.  
+you should figure out how you want to authenticate,
+authorize, and monitor users manipulating your base cloud infrastructure.  
 
-The following process describes one approach to inflating an AWS account before beginning application development.  Although the simple steps taken here are only suitable for a single account setup for an individual or small team, the approach (setting up authentication, roles for authorization, monitoring, a simple budget, and basic alerts) generalizes for use with a multi-account [AWS organization](https://aws.amazon.com/organizations/).
+The following process describes one approach to inflating an AWS account before beginning application development.  Although the steps taken here are only suitable for a single account setup for an individual or small team, the approach (setting up authentication, roles for authorization, monitoring, a simple budget, and basic alerts) generalizes for use with a multi-account [AWS organization](https://aws.amazon.com/organizations/).
 
 
 ## The Plan
@@ -32,7 +32,7 @@ Here's what we're going to do
 * finally - setup an initial `administrator` account using the new infrastructure, and delete the temporary `bootstrap` user
 
 
-## Setup and AWS bootstrap user
+## Setup an AWS bootstrap user
 
 Login to the root account, and do the following:
 
@@ -66,16 +66,18 @@ mfa_serial = arn:aws:iam::123456789:mfa/bootstrap
 
 ## Install software tools
 
-These instructions assume your command shell has access to the following tools: [bash](https://www.gnu.org/software/bash/) shell, the [jq](https://stedolan.github.io/jq/) json tool, [git](https://git-scm.com/), and the [aws cli](https://aws.amazon.com/cli/).
+These instructions assume your command shell has access to the following tools: [bash](https://www.gnu.org/software/bash/), the [jq](https://stedolan.github.io/jq/) json tool, [git](https://git-scm.com/), and the [aws cli](https://aws.amazon.com/cli/).
 
-* download the cloudformation templates and helper scripts associated with this bLog from our [git repository](https://github.com/frickjack/misc-stuff):
+* download the cloudformation templates and helper scripts from our [git repository](https://github.com/frickjack/misc-stuff):
+```
+git clone https://github.com/frickjack/misc-stuff.git
+```
+* add the `arun` tool to your command path
 ```
 # assuming you're running a bash shell or similar
-git clone https://github.com/frickjack/misc-stuff.git
 alias arun="bash $(pwd)/misc-stuff/AWS/bin/arun.sh"
 export LITTLE_HOME="$(pwd)/misc-stuff/AWS"
 ```
-
 
 * run the bootstrap script - it does the following:
     - deploys a block on s3 public access
@@ -88,7 +90,7 @@ export AWS_PROFILE="bootstrap-ohio"
 arun accountBootstrap
 ```
 
-* finally - we are nearly ready to deploy some cloudformation stacks.  
+* finally - prepare the inputs to our cloudformation stacks.
     - make a copy of the account-specific stack-parameters:
     ```
     cp AWS/misc-stuff/db/frickjack AWS/misc-stuff/db/YOUR-ACCOUNT
@@ -98,7 +100,7 @@ arun accountBootstrap
     - customize the cloudformation templates under `misc-stuff/AWS/lib/cloudformation/` for your account.  For example - the `IamSetup.json` template sets up an IAM policy that allows access to `S3` and `lambda` and `APIGateway` API's, because I'm interested in those serverless technologies, but you may want to add permissions for accessing the `EC2` and `VPC` API's.
 
 
-## What's the big idea?
+## What's the idea?
 
 Before we start deploying stacks let's talk about the ideas we're implementing.
 
@@ -106,8 +108,7 @@ Before we start deploying stacks let's talk about the ideas we're implementing.
 
 #### The Right Way to Authenticate
 
-First, authentication - how should a user prove who he is?  AWS IAM has primitives for setting up users and groups, but that's not your best option for establishing user identities, because it's just one more thing you need to
-maintain.  
+First, authentication - how should a user prove who he is?  AWS IAM has primitives for setting up users and groups, but that's not your best option for establishing a user's identity, because it's one more thing you need to maintain.  
 
 Instead of administering identity with users and groups in IAM under an AWS account - it's better to setup [federated](https://aws.amazon.com/identity/federation/) authentication 
 [with Google Apps](https://aws.amazon.com/blogs/security/how-to-set-up-federated-single-sign-on-to-aws-using-google-apps/)
@@ -115,10 +116,10 @@ or [Office365](https://jvzoggel.com/2015/10/16/cloud-integration-using-federatio
 or some other identity provider that you already maintain
 with multi-factor auth and a password policy and all that other good stuff.
 If you don't already have an identity provider, then AWS has its own
-service - [AWS SSO](https://aws.amazon.com/single-sign-on/)
+service, [AWS SSO](https://aws.amazon.com/single-sign-on/)
 
 While you're at it - you might [setup an organization](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org.html), 
-because whatever it is you're doing
+because whatever you're doing it
 is bound to be wildly successful, and you'll wind up setting up multiple accounts for
 your galloping unicorn, and an organization helps simplify that administration.
 
@@ -126,7 +127,7 @@ your galloping unicorn, and an organization helps simplify that administration.
 
 If you don't already have an SSO identity provider, and you don't have someone to do it for you, 
 then setting up an SSO and AWS federation
-and an AWS organization may seem like a lot of work just to manage a few people's access
+and an AWS organization may seem like a lot of work just to manage a small team's access
 to AWS API's.  So let's not do things the right way, but let's not be completely wrong either.
 We can emulate the right way.
 
@@ -137,12 +138,41 @@ We can emulate the right way.
 * associate each group with an IAM role, so that a group member gains access to AWS API's by
 acquiring a temporary credentials via a multifactor-signed call to [sts](https://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html)
 
+This authentication setup ensures that access to AWS API's comes either
+from AWS managed temporary credentials passed directly to AWS resources like EC2 or
+labmda via something like the [AWS metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html), or a user must pass mutlifactor authentication to 
+acquire a temporary token directly.  Hopefully this authentication setup will protect our account from being compromised due to an exposed secret.
+
+
+### Authorization
+
+Now that we have a mechanism to securely authenticate users and services that want to access AWS API's, how should we decide which privileges to grant different users?  Our [iamSetup](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/iamSetup.json) cloudformation stack sets up three groups of users each
+associated with its own IAM role:
+* administrator
+* operator
+* developer
+
+We restrict write permission to IAM policies to
+the administrators that are trained to enforce least privilege access.
+We want to restrict which users can disable cloudtrail, because there's
+no reason to do that.  
+
+The administrator group also shared permissions to create other AWS
+resources (whatever we want to allow in our account) with the group of operators.
+I'm not sure if it makes sense to have both an administrator group and an operator group -
+but one scenario might be that an administrator can setup IAM policies conditional on resource tags
+for a particular application or whatever, and an operator (maybe a `devops` specialist on a team) can then create and delete resources with the appropriate tags.
+
+The developer group cannot create new resources directly, but they
+do have permissions to deploy new versions of an application (udpate a lambda, or change the backend on an api gateway, or upgrade an EC2 AMI, or modify S3 objects - that kind of thing).
+
+Finally - each application service has its own IAM role attached to its ECS container or EC2 instances or lambda or whatever.
+The administrator, operator, and developer roles should only be available to human users; each application's role grants the minimum privilege that service requires.
 
 ### Tagging
 
-
 A consistent tagging strategy allows
-everyone to easily determine the general purpose for a resource and who is responsible for the resource's allocation and billing.  Something like this works, but there are many ways to do it.
+everyone to easily determine the general purpose of a resource and who is responsible for the resource's allocation and billing.  Something like this works, but there are many ways to do it.
 
 
 ```
@@ -172,37 +202,6 @@ everyone to easily determine the general purpose for a resource and who is respo
     }
 ```
 
-The authentication setup described above ensures that access to AWS API's comes either
-from AWS managed temporary credentials passed directly to AWS resources like EC2 or
-labmda via something like the [AWS metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html), or a user must pass mutlifactor authentication to 
-acquire a temporary token directly.  Hopefully this authentication setup will protect our account from being compromised due to an exposed secret.
-
-### Authorization
-
-Now that we have a mechanis to securely authenticate users and services that want to access AWS API's, how should we decide which privileges to grant different users?  Our [iamSetup](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/iamSetup.json) cloudformation stack sets up three groups of users each
-associated with its own IAM role:
-* administrator
-* operator
-* developer
-
-We restrict write permission to IAM policies to
-the administrators that are trained to enforce least privilege access.
-We want to restrict which users can disable cloudtrail, because there's
-no reason to do that.  
-
-The administrator group also shared permissions to create other AWS
-resources (whatever we want to allow in our account) with the group of operators.
-I'm not sure if it makes sense to have both an administrator group and an operator group -
-but one scenario might be that an administrator can setup IAM policies conditional on resource tags
-for a particular application or whatever, and an operator (maybe a `devops` specialist on a team) can then create and delete resources with the appropriate tags.
-
-The developer group cannot create new resources directly, but they
-do have permissions to deploy new versions of an application (udpate a lambda, or change the backend on an api gateway, or upgrade an EC2 AMI, or modify S3 objects - that kind of thing).
-
-Finally - each application service has its own IAM role attached to its ECS container or EC2 instances or lambda or whatever.
-The administrator, operator, and developer roles should only be available to human users; each application's role grants the minimum privilege that service requires.
-
-
 ### Logs, Metrics, Monitoring, and Alerts
 
 I was slow to understand what's up with `cloudwatch` and `sns`, but
@@ -216,9 +215,9 @@ load, response time, number of requests, whatever.  `Cloudwatch alarms` fire act
 triggered by rules applied to metrics, events, and logs.
 
 For example - our cloudformation stack sets up a [`notifications` topic in SNS](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/snsNotifyTopic.json) that
-our `cloudwatch alarms` publish to, and we setup alarms to send notifications
-when [changes are made to IAM](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/iamAlarm.json) or when the [`root` account is accessed](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/rootAccountAlarm.json) or when an account [approaches 
-its budget limit](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/budgetAlarm.json) or when AWS [guard duty detects something](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/guardDuty.json) ... that kind of thing.
+our `cloudwatch alarms` publish to; and we setup alarms to send notifications
+when [changes are made to IAM](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/iamAlarm.json), or when the [`root` account is accessed](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/rootAccountAlarm.json), or when an account [approaches 
+its budget limit](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/budgetAlarm.json), or when AWS [guard duty detects something](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/lib/cloudFormation/accountSetup/guardDuty.json) ... that kind of thing.
 
 
 ## Deploy the stacks
@@ -263,7 +262,7 @@ source_profile = default
 mfa_serial = arn:aws:iam::012345678901:mfa/yourUser
 ```
 
-Now you can run commands like this - these tools will prompt you for an MFA code when necessary to acquire a fresh access token:
+With these credentials in place, you can run commands like the following.  These tools will prompt you for an MFA code when necessary to acquire a fresh access token:
 ```
 export AWS_PROFILE=admin-ohio
 aws s3 ls
