@@ -1,0 +1,52 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "UserPool": {
+      "Type" : "AWS::Cognito::UserPool",
+      "Properties" : {
+          "AdminCreateUserConfig" : {
+            "AllowAdminCreateUserOnly" : false
+          },
+          "Schema": [
+            {
+              "Name": "email",
+              "AttributeDataType": "String",
+              "Mutable": false,
+              "Required": true
+            }
+          ],
+          "UserPoolName" : { "Fn::Sub": "${TenantName}-pool" },
+          "UserPoolTags" : 
+            {
+                "org": "client-services",
+                "project": { "Fn::Sub": "${TenantName}" },
+                "stack": "main",
+                "stage": { "Fn::Sub": "${StageName}" },
+                "role": "authn"
+            }
+        }
+    },
+    "UserPoolClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "ClientName": "gateway",
+        "GenerateSecret": true,
+        "UserPoolId": { "Ref": "UserPool" }
+      }
+    }
+  },
+  "Parameters": {
+    "TenantName": {
+      "Type": "String",
+      "Description": "id of the tenant associated with this idp",
+      "ConstraintDescription": "must be of form 'Tenant{Number}'",
+      "AllowedPattern": "Tenant[0-9]+"
+    },
+    "StageName": {
+      "Type": "String",
+      "Description": "id of the production associated with this idp (prod, pre-prod, qa, dev)",
+      "Default" : "prod",
+      "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
+    }
+  }
+}

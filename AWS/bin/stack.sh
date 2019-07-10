@@ -110,7 +110,7 @@ delete() {
       echo "ERROR: unable to load name from stack skeleton: $stackPath" 1>&2
       return 1
     fi
-    #aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name "$stackName"
+    aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name "$stackName"
     aws cloudformation delete-stack --stack-name "$stackName"
 }
 

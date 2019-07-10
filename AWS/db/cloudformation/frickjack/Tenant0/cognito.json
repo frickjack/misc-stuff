@@ -1,0 +1,39 @@
+{
+    "StackName": "little-tenant0-cognito-frickjack",
+    "Capabilities": [
+    ],
+    "TimeoutInMinutes": 5,
+    "EnableTerminationProtection": true,
+    "Parameters" : [
+        {
+            "ParameterKey": "TenantName",
+            "ParameterValue": "Tenant0"
+        },
+        {
+            "ParameterKey": "StageName",
+            "ParameterValue": "prod"
+        }
+    ],
+    "Tags": [
+        {
+            "Key": "org",
+            "Value": "tenant-services"
+        },
+        {
+            "Key": "project",
+            "Value": "Tenant0"
+        },
+        {
+            "Key": "stack",
+            "Value": "main"
+        },
+        {
+            "Key": "stage",
+            "Value": "prod"
+        },
+        {
+            "Key": "role",
+            "Value": "authn"
+        }
+    ]
+}

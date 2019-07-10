@@ -211,10 +211,7 @@
                 "Resource": "*",
                 "Condition": {
                   "StringNotEquals": {
-                    "aws:RequestedRegion": [
-                      "us-east-2",
-                      "us-east-1"
-                    ]
+                    "aws:RequestedRegion": { "Ref": "RegionList" }
                   }
                 }
               },
@@ -358,6 +355,7 @@
               {
                 "Effect": "Allow",
                 "Action": [
+                  "cognito-idp:*",
                   "cognito-identity:*",
                   "cognito-sync:*",
                   "sns:ListPlatformApplications"

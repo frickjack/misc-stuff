@@ -1,0 +1,179 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Resources": {
+    "Api": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "Name": [
+          "${ResourceName} From Stack ${StackTagName} Environment ${EnvironmentTagName}",
+          {
+            "ResourceName": "Api"
+          }
+        ],
+        "StageName": "EnvironmentAPIGatewayStageName",
+        "DefinitionBody": {
+          "swagger": "2.0",
+          "info": {},
+          "paths": {
+            "/signup": {
+              "post": {
+                "x-amazon-apigateway-integration": {
+                  "httpMethod": "POST",
+                  "type": "aws_proxy",
+                  "uri": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Signup.Arn}/invocations"
+                },
+                "responses": {}
+              }
+            },
+            "/userstuff": {
+              "get": {
+                "x-amazon-apigateway-integration": {
+                  "httpMethod": "POST",
+                  "type": "aws_proxy",
+                  "uri": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthenticatedApi.Arn}/invocations"
+                },
+                "responses": {}
+              }
+            }
+          }
+        },
+        "EndpointConfiguration": "REGIONAL"
+      }
+    },
+    "Signup": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "FunctionName": "${AWS::StackName}-Signup",
+        "Description": [
+          "Stack ${StackTagName} Environment ${EnvironmentTagName} Signup ${ResourceName}",
+          {
+            "ResourceName": "Signup"
+          }
+        ],
+        "CodeUri": "src/Signup",
+        "Handler": "index.handler",
+        "Runtime": "nodejs8.10",
+        "MemorySize": 3008,
+        "Timeout": 30,
+        "Tracing": "Active",
+        "Policies": [
+          "AWSXrayWriteOnlyAccess",
+          {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "cognito-idp:Admin*",
+                  "cognito-idp:DescribeIdentityProvider",
+                  "cognito-idp:DescribeResourceServer",
+                  "cognito-idp:DescribeUserPool",
+                  "cognito-idp:DescribeUserPoolClient",
+                  "cognito-idp:DescribeUserPoolDomain",
+                  "cognito-idp:GetGroup",
+                  "cognito-idp:ListGroups",
+                  "cognito-idp:ListUserPoolClients",
+                  "cognito-idp:ListUsers",
+                  "cognito-idp:ListUsersInGroup",
+                  "cognito-idp:UpdateGroup"
+                ],
+                "Resource": "UserPool.Arn"
+              }
+            ]
+          }
+        ],
+        "Environment": {
+          "Variables": {
+            "USER_POOL_ID": "UserPool",
+            "USER_POOL_ARN": "UserPool.Arn",
+            "USER_POOL_CLIENT_ID": "UserPoolClient"
+          }
+        },
+        "Events": {
+          "ApiPOSTsignup": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/signup",
+              "Method": "POST",
+              "RestApiId": "Api"
+            }
+          }
+        }
+      }
+    },
+    "AuthenticatedApi": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "FunctionName": "${AWS::StackName}-AuthenticatedApi",
+        "Description": [
+          "Stack ${StackTagName} Environment ${EnvironmentTagName} AuthenticatedApi ${ResourceName}",
+          {
+            "ResourceName": "AuthenticatedApi"
+          }
+        ],
+        "CodeUri": "src/AuthenticatedApi",
+        "Handler": "index.handler",
+        "Runtime": "nodejs8.10",
+        "MemorySize": 3008,
+        "Timeout": 30,
+        "Tracing": "Active",
+        "Policies": [
+          "AWSXrayWriteOnlyAccess",
+          {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "cognito-idp:Admin*",
+                  "cognito-idp:DescribeIdentityProvider",
+                  "cognito-idp:DescribeResourceServer",
+                  "cognito-idp:DescribeUserPool",
+                  "cognito-idp:DescribeUserPoolClient",
+                  "cognito-idp:DescribeUserPoolDomain",
+                  "cognito-idp:GetGroup",
+                  "cognito-idp:ListGroups",
+                  "cognito-idp:ListUserPoolClients",
+                  "cognito-idp:ListUsers",
+                  "cognito-idp:ListUsersInGroup",
+                  "cognito-idp:UpdateGroup"
+                ],
+                "Resource": "UserPool.Arn"
+              }
+            ]
+          }
+        ],
+        "Events": {
+          "ApiGETuserstuff": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/userstuff",
+              "Method": "GET",
+              "RestApiId": "Api"
+            }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "USER_POOL_ID": "UserPool",
+            "USER_POOL_ARN": "UserPool.Arn",
+            "USER_POOL_CLIENT_ID": "UserPoolClient"
+          }
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "StackTagName": {
+      "Type": "String",
+      "Description": "Stack Name (injected by Stackery at deployment time)"
+    },
+    "EnvironmentTagName": {
+      "Type": "String",
+      "Description": "Environment Name (injected by Stackery at deployment time)"
+    },
+    "EnvironmentAPIGatewayStageName": {
+      "Type": "String",
+      "Description": "Environment name used for API Gateway Stage names (injected by Stackery at deployment time)"
+    }
+  }
+}

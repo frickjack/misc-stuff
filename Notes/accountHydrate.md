@@ -63,6 +63,8 @@ mfa_serial = arn:aws:iam::123456789:mfa/bootstrap
 
 * enable the billing API https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_billing.html?icmpid=docs_iam_console#tutorial-billing-step1
 
+* enable EBS encryption by default in each region you intend to operate in: https://docs.amazonaws.cn/en_us/AWSEC2/latest/UserGuide/EBSEncryption.html
+
 * enable the [security hub](https://aws.amazon.com/security-hub/)
 
 ## Install software tools
