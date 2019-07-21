@@ -8,7 +8,7 @@ gen3_load "lib/bash/shunit"
 #
 
 help() {
-  gen3 help testsuite
+  arun help testsuite
   return 0
 }
 
@@ -30,5 +30,6 @@ done
 
 source "$LITTLE_HOME/test/utilsTest.sh"
 source "$LITTLE_HOME/test/arunTest.sh"
+source "$LITTLE_HOME/test/lambdaTest.sh"
 source "$LITTLE_HOME/test/stackTest.sh"
 shunit_summary
