@@ -5,6 +5,8 @@ set -e
 
 # globals -------------------
 
+profile="${AWS_PROFILE:-default}"
+
 if ! region="$(aws --profile "$profile" configure get region)"; then
     echo "ERROR: aws configure get region failed" 1>&2
     return 1

@@ -21,3 +21,35 @@ An [api gateway](https://aws.amazon.com/api-gateway/) decouples several concerns
 * deployment management - canaries, versioning
 
 Cloud version of an application server - ingress to a service mesh.
+
+## Dev environment
+
+* aws sam cli [install](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html)
+
+## Dev-Test-Deploy process
+
+Issues:
+
+* develop lambda
+* api gateway - dev environments, etc
+* configuration injection
+* test lambda
+* publish lambda
+
+To [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) or not to SAM?  For local testing ...
+
+Publishing lambda versions ...
+
+Lambda layers ...
+
+Lambda [execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html) - what the lambda can do
+
+Lambda [resource based policy](https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html) - allow AWS services to invoke the lambda ...
+API Gateway is given invoke permission [directly](https://stackoverflow.com/questions/39905255/how-can-i-grant-permission-to-api-gateway-to-invoke-lambda-functions-through-clo)
+
+
+Monitoring:
+* concurrency
+* concurrency alerts
+* cloudwatch logs
+* X-Ray
