@@ -19,7 +19,7 @@ bucket="cloudformation-frickjack-$region"
 # lib ------------------------
 
 help() {
-    bash "$LITTLE_HOME/bin/help.sh" stack
+    bash "$LITTLE_HOME/bin/help.sh" lambda
 }
 
 #
@@ -65,26 +65,6 @@ lambda_bundle() {
     zip -r bundle.zip * 1>&2 && echo "$(pwd)/bundle.zip"
 }
 
-#
-# Publish the bundle.zip in the current
-# folder.  Copy to S3 folder, then
-# publish to lambda under dev/${package_name}_${branch}
-#
-# @param lambdaName the lambda to update with the new code
-# @param zipPath the s3://... path of the bundle.zip, 
-#           or a local file path to bundle up and copy to s3
-# 
-lambda_update() {
-    local bundle
-    local branch
-    local packName
-    local funcName
-    branch="$(lambda_git_branch)" && \
-      packame="$(lambda_package_name)" && \
-      bundle="$(lambda_bundle)"
-    funcName="${packName}-${branch}"
-    aws lambda create-function --function-name "$funcName" --runtime nodejs10.x
-}
 
 #
 # Publish the bundle.zip in the current
@@ -95,14 +75,58 @@ lambda_update() {
 lambda_upload() {
     local bundle
     local branch
+    local cleanBranch
     local packName
+    local s3Path
  
     branch="$(lambda_git_branch)" && \
-      packame="$(lambda_package_name)" && \
-      bundle="$(lambda_bundle)"
-    funcName="${packName}-${branch}"
-    aws lambda create-function --function-name "$funcName" --runtime nodejs10.x
+      cleanBranch="${branch//[ \/]/-}" && \
+      packName="$(lambda_package_name)" && \
+      bundle="$(lambda_bundle)" && \
+      s3Path="s3://${bucket}/lambda/${packName}/${packName}-${branch}.zip" && \
+      gen3_log_info "Uploading $s3Path" && \
+      aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
+      echo $s3Path
 }
+
+#
+# Publish the bundle.zip in the current
+# folder.  Copy to S3 folder, then
+# publish to lambda layer under dev/${package_name}_${branch}
+#
+# @param layerName the lambda layer to update with the new code
+# @param zipPath the s3://... path of the bundle.zip, 
+#           or a local file path to bundle up and copy to s3
+# 
+lambda_update_layer() {
+    local bundle
+    local branch
+    local packName
+    local layerName
+    local commandJson
+    branch="$(lambda_git_branch)" && \
+      packName="$(lambda_package_name)" && \
+      bundle="$(lambda_upload)"
+    layerName="${packName}-${branch}"
+    commandJson=$(cat - <<EOM
+    {
+        "LayerName": "$layerName",
+        "Description": "",
+        "Content": {
+            "S3Bucket": "$bucket",
+            "S3Key": "${bundle#s3://*/}"
+        },
+        "CompatibleRuntimes": [
+            "nodejs10.x"
+        ],
+        "LicenseInfo": "ISC"
+    }
+EOM
+    )
+    cat - 1>&2 <<<$commandJson
+    aws lambda publish-layer-version --cli-input-json "$commandJson"
+}
+
 
 # main ---------------------
 
@@ -125,7 +149,7 @@ if [[ -z "${GEN3_SOURCE_ONLY}" ]]; then
             lambda_git_branch "$@"
             ;;
         "update")
-            lambda_update "$@"
+            lambda_update_layer "$@"
             ;;
         "upload")
             lambda_upload "$@"
