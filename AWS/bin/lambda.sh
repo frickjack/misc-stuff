@@ -108,6 +108,14 @@ lambda_update_layer() {
       packName="$(lambda_package_name)" && \
       bundle="$(lambda_upload)"
     layerName="${packName}-${branch}"
+
+    # delete old versions before creating a new one
+    local arn
+    for arn in $(aws lambda list-layer-versions --layer-name "$layerName" | jq -r '.LayerVersions | map(.LayerVersionArn) | del(.[0]) | .[]'); do
+        gen3_log_info "deleting old layer version $arn"
+        aws lambda delete-layer-version --layer-name "$layerName" --version-number "${arn##*:}" 1>&2
+    done
+
     commandJson=$(cat - <<EOM
     {
         "LayerName": "$layerName",
