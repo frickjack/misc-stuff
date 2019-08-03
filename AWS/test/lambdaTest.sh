@@ -16,7 +16,7 @@ test_setup_bogus() {
         because $? "cannot derive package name if package.json does not exist" 1>&2
     (cat - <<EOM
 {
-"name": "bogus"
+"name": "@littleware/bogus"
 }        
 EOM
     ) > package.json
@@ -38,7 +38,7 @@ test_package_name() {
         because $? "test setup should succeed: $testDir"
     name="$(arun lambda package_name)" \
         && /bin/rm -rf "$testDir" \
-        && [[ "$name" == 'bogus' ]];
+        && [[ "$name" == '@littleware/bogus' ]];
         because $? "derived expected npm package name from package.json: $name"
 }
 
@@ -51,6 +51,17 @@ test_git_branch() {
         && /bin/rm -rf "$testDir" \
         && [[ "$name" == 'frickjack' ]];
         because $? "derived expected git branch: $name"
+}
+
+test_layer_name() {
+    local name
+    local testDir
+    testDir="$(test_setup_bogus)" && cd "$testDir"; 
+        because $? "test setup should succeed: $testDir"
+    name="$(arun lambda layer_name)" \
+        && /bin/rm -rf "$testDir" \
+        && [[ "$name" == '_littleware_bogus-frickjack' ]];
+        because $? "derived expected lambda layer name from package.json and git branch: $name"
 }
 
 test_lambda_bundle() {
@@ -72,7 +83,7 @@ test_lambda_upload() {
     path="$(arun lambda upload)" \
         && /bin/rm -rf "$testDir";
         because $? "arun lambda upload should succeed"
-    [[ "$path" =~ ^s3://.+/bogus-frickjack.zip$ ]];
+    [[ "$path" =~ ^s3://.+/_littleware_bogus-frickjack.zip$ ]];
         because $? "arun lambda upload uploads a bundle.zip: $path"
     aws s3 ls "$path" > /dev/null 2>&1; because $? "arun lambda upload creats an s3 object at $path"
 }
@@ -88,8 +99,9 @@ test_lambda_update() {
     jq -r .LayerVersionArn <<<"$data"; because $? "arun lambda update should return layer version data"
 }
 
-shunit_runtest "test_package_name" "lambda"
 shunit_runtest "test_git_branch" "lambda"
+shunit_runtest "test_layer_name" "lambda"
+shunit_runtest "test_package_name" "lambda"
 shunit_runtest "test_lambda_bundle" "lambda"
 shunit_runtest "test_lambda_upload" "lambda"
 shunit_runtest "test_lambda_update" "lambda"

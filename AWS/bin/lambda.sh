@@ -45,6 +45,37 @@ lambda_git_branch() {
     git rev-parse --abbrev-ref HEAD
 }
 
+#
+# Derive a sanitized lambda layer name from the
+# given nodejs (or whatever) package name and
+# git (or whatever) git branch.  Removes illegal
+# characters, etc.
+#
+# @param packageName or defaults to lambada_pack_name if not given
+# @param branchName or defaults to lambada_pack_name if not given
+# @return echo the sanitized layer name
+#
+lambda_layer_name() {
+    local name
+    local packName=""
+    local gitBranch=""
+
+    if [[ $# -gt 0 ]]; then
+      packName="$1"
+      shift
+    fi
+    if [[ $# -gt 0 ]]; then
+      gitBranch="$1"
+      shift
+    fi
+    if ! packName="${packName:-$(lambda_package_name)}" || ! gitBranch="${gitBranch:-$(lambda_git_branch)}"; then
+      gen3_log_err "failed to determine package name and git branch from arguments or current folder $(pwd): $@"
+      return 1
+    fi
+    name="${packName}-${gitBranch}"
+    echo "${name//[ \/@]/_}"
+}
+
 
 lambda_drun() {
     docker run --rm -v "$PWD":/var/task lambci/lambda:nodejs10.x "$@"
@@ -79,11 +110,10 @@ lambda_upload() {
     local packName
     local s3Path
  
-    branch="$(lambda_git_branch)" && \
-      cleanBranch="${branch//[ \/]/-}" && \
+    layerName="$(lambda_layer_name)" && \
       packName="$(lambda_package_name)" && \
       bundle="$(lambda_bundle)" && \
-      s3Path="s3://${bucket}/lambda/${packName}/${packName}-${branch}.zip" && \
+      s3Path="s3://${bucket}/lambda/${packName}/${layerName}.zip" && \
       gen3_log_info "Uploading $s3Path" && \
       aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
       echo $s3Path
@@ -100,14 +130,17 @@ lambda_upload() {
 # 
 lambda_update_layer() {
     local bundle
-    local branch
-    local packName
     local layerName
     local commandJson
-    branch="$(lambda_git_branch)" && \
-      packName="$(lambda_package_name)" && \
-      bundle="$(lambda_upload)"
-    layerName="${packName}-${branch}"
+    
+    if ! layerName="$(lambda_layer_name)"; then
+      gen3_log_err "failed to derive layer name, bailing out of layer update"
+      return 1
+    fi
+    if ! bundle="$(lambda_upload)"; then
+        gen3_log_err "failed to upload code bundle, bailing out of layer update"
+        return 1
+    fi
 
     # delete old versions before creating a new one
     local arn
@@ -149,6 +182,9 @@ if [[ -z "${GEN3_SOURCE_ONLY}" ]]; then
             ;;
         "drun")
             lambda_drun "$@"
+            ;;
+        "layer_name")
+            lambda_layer_name "$@"
             ;;
         "package_name")
             lambda_package_name "$@"
