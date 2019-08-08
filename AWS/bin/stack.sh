@@ -12,8 +12,8 @@ if ! region="$(aws --profile "$profile" configure get region)"; then
     return 1
 fi
 
-bucket="cloudformation-frickjack-$region"
 accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"
+bucket="cloudformation-${accountId}-$region"
 
 # lib ------------------------
 

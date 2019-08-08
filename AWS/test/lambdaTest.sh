@@ -5,7 +5,7 @@
 #
 test_setup_bogus() {
     local testDir
-    testDir="$XDG_RUNTIME_DIR/$$_$RANDOME"
+    testDir="$XDG_RUNTIME_DIR/$$_$RANDOM"
     mkdir -p "$testDir" && cd "$testDir";
       because $? "successfully setup test folder: $testDir" 1>&2
     /bin/rm -rf package.json

@@ -1,36 +1,39 @@
 {
-    "StackName": "little-cell0-gateway-frickjack",
+    "StackName": "little-reuben-gateway-frickjack",
     "Capabilities": [
-        "CAPABILITY_AUTO_EXPAND"
     ],
     "TimeoutInMinutes": 5,
     "EnableTerminationProtection": true,
     "Parameters" : [
         {
-            "ParameterKey": "RegionList",
-            "ParameterValue": "us-east-1,us-east-2"
+            "ParameterKey": "StackName",
+            "ParameterValue": "reuben"
+        },
+        {
+            "ParameterKey": "StageName",
+            "ParameterValue": "dev"
         }
     ],
     "Tags": [
             {
                 "Key": "org",
-                "Value": "cell-services"
+                "Value": "applications"
             },
             {
                 "Key": "project",
-                "Value": "Cell0"
+                "Value": "api.frickjack.com"
             },
             {
                 "Key": "stack",
-                "Value": "main"
+                "Value": "reuben"
             },
             {
                 "Key": "stage",
-                "Value": "prod"
+                "Value": "dev"
             },
             {
               "Key": "role",
-              "Value": "gateway"
+              "Value": "api"
             }
     ]
 }

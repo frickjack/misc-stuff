@@ -1,50 +1,64 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Resources": {
-    "UserPool": {
-      "Type" : "AWS::Cognito::UserPool",
+    "apiGateway": {
+      "Type" : "AWS::Lambda::Function",
       "Properties" : {
-          "AdminCreateUserConfig" : {
-            "AllowAdminCreateUserOnly" : false
+        "Code" : {
+          "S3Bucket" : { },
+          "S3Key" : String,
+          "ZipFile" : "const bridge = requre('/opt/authn/commonjs/bin/oidcClient/lambdaBridge.js'); exports.lambdaHandler = bridge.lambdaHandler"
+        },
+        "Description" : "hello test function",
+        "Environment" : {
+          "Variables": { 
+            "LittleMessage": "hello" 
+          }
+        },
+        "FunctionName" : { "Fn::Join": [ "-", ["api.frickjack.com", { "Ref": "StackName" }, { "Ref": "StageName" }, "authn"]] },
+        "Handler" : "index.lambdaHandler",
+        "Layers" : [ "arn:aws:lambda:us-east-2:027326493842:layer:_littleware_little-authn-master:1" ],
+        "MemorySize" : 256,
+        "Role" : "arn:aws:iam::027326493842:role/littleware/account/service/littleLamda",
+        "Runtime" : "nodejs10.x",
+        "Tags": [
+          {
+              "Key": "org",
+              "Value": "applications"
           },
-          "Schema": [
-            {
-              "Name": "email",
-              "AttributeDataType": "String",
-              "Mutable": false,
-              "Required": true
-            }
-          ],
-          "UserPoolName" : { "Fn::Sub": "${TenantName}-pool" },
-          "UserPoolTags" : 
-            {
-                "org": "client-services",
-                "project": { "Fn::Sub": "${TenantName}" },
-                "stack": "main",
-                "stage": { "Fn::Sub": "${StageName}" },
-                "role": "authn"
-            }
+          {
+              "Key": "project",
+              "Value": "api.frickjack.com"
+          },
+          {
+              "Key": "stack",
+              "Value": { "Ref": "StackName" }
+          },
+          {
+              "Key": "stage",
+              "Value": { "Ref": "StageName" }
+          },
+          {
+            "Key": "role",
+            "Value": "api"
+          }
+      ],
+      "Timeout" : 3,
+        "TracingConfig" : {
+          "Mode": "Active"
         }
-    },
-    "UserPoolClient": {
-      "Type": "AWS::Cognito::UserPoolClient",
-      "Properties": {
-        "ClientName": "gateway",
-        "GenerateSecret": true,
-        "UserPoolId": { "Ref": "UserPool" }
       }
     }
   },
   "Parameters": {
-    "TenantName": {
+    "StackName": {
       "Type": "String",
-      "Description": "id of the tenant associated with this idp",
-      "ConstraintDescription": "must be of form 'Tenant{Number}'",
-      "AllowedPattern": "Tenant[0-9]+"
+      "Description": "deployment stack - ex api.frickjack.com, reuben.dev.frickjack.com, ...",
+      "ConstraintDescription": "should usually be the domain of the deployment"
     },
     "StageName": {
       "Type": "String",
-      "Description": "id of the production associated with this idp (prod, pre-prod, qa, dev)",
+      "Description": "dev stage associated with this stack (prod, pre-prod, qa, dev)",
       "Default" : "prod",
       "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
     }

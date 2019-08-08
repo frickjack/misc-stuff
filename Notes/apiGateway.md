@@ -35,6 +35,16 @@ Issues:
 * configuration injection
 * test lambda
 * publish lambda
+* api gateway - API stages, versioning
+* CICD - lambda layers, etc
+* monitoring
+
+Ideas:
+
+* lambda == deployment, layer == code - lambda is associated with an API (gateway) or generic handler (ex: slack message), etc
+
+* CICD == test and publish new layers
+* gitops/operator == associate layer versions with lambda deployments?
 
 To [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) or not to SAM?  For local testing ...
 

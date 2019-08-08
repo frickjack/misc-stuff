@@ -6,17 +6,33 @@ source "${LITTLE_HOME}/lib/bash/utils.sh"
 
 # globals --------------------
 
-profile="${AWS_PROFILE:-default}"
-
-if ! region="$(aws --profile "$profile" configure get region)"; then
-    echo "ERROR: aws configure get region failed" 1>&2
-    return 1
-fi
-
-bucket="cloudformation-frickjack-$region"
-
+_lambdaBucket=""
 
 # lib ------------------------
+
+
+lambdaBucketName() {
+    if [[ -n "$_lambdaBucket" ]]; then
+      echo "$_lambdaBucket"
+      return 0
+    fi
+
+    local profile="${AWS_PROFILE:-default}"
+    local region
+    local accountId
+    if ! region="$(aws --profile "$profile" configure get region)"; then
+        gen3_log_err "aws configure get region failed"
+        return 1
+    fi
+
+    if ! accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"; then
+        gen3_log_err "could not determine AWS account alias"
+        return 1
+    fi
+    _lambdaBucket="cloudformation-${accountId}-$region"
+    echo "$_lambdaBucket"
+    return 0
+}
 
 help() {
     bash "$LITTLE_HOME/bin/help.sh" lambda
@@ -26,7 +42,7 @@ help() {
 # Get the npm package name from the `package.json`
 # in the current directory
 #
-lambda_package_name() {
+lambdaPackageName() {
     if [[ ! -f package.json ]]; then
         gen3_log_err "no file ./package.json in current folder"
         return 1
@@ -37,7 +53,7 @@ lambda_package_name() {
 #
 # Get the git branch of the current directory
 #
-lambda_git_branch() {
+lambdaGitBranch() {
     if [[ ! -d .git ]]; then
         gen3_log_err "no .git/ folder in current folder"
         return 1
@@ -55,7 +71,7 @@ lambda_git_branch() {
 # @param branchName or defaults to lambada_pack_name if not given
 # @return echo the sanitized layer name
 #
-lambda_layer_name() {
+lambdaLayerName() {
     local name
     local packName=""
     local gitBranch=""
@@ -68,7 +84,7 @@ lambda_layer_name() {
       gitBranch="$1"
       shift
     fi
-    if ! packName="${packName:-$(lambda_package_name)}" || ! gitBranch="${gitBranch:-$(lambda_git_branch)}"; then
+    if ! packName="${packName:-$(lambdaPackageName)}" || ! gitBranch="${gitBranch:-$(lambdaGitBranch)}"; then
       gen3_log_err "failed to determine package name and git branch from arguments or current folder $(pwd): $@"
       return 1
     fi
@@ -77,7 +93,7 @@ lambda_layer_name() {
 }
 
 
-lambda_drun() {
+lambdaDockerRun() {
     docker run --rm -v "$PWD":/var/task lambci/lambda:nodejs10.x "$@"
 }
 
@@ -85,7 +101,7 @@ lambda_drun() {
 # Zip up the current folder assuming
 # its a nodejs folder
 #
-lambda_bundle() {
+lambdaBundle() {
     if ! [[ -d .git && -f ./package.json ]]; then
         gen3_log_err "lambda package bailing out - missing .git or package.json"
         return 1
@@ -103,16 +119,18 @@ lambda_bundle() {
 #
 # @param zipPath path to a local directory path to bundle up and copy to s3
 # 
-lambda_upload() {
+lambdaUpload() {
     local bundle
     local branch
     local cleanBranch
     local packName
     local s3Path
+    local bucket
  
-    layerName="$(lambda_layer_name)" && \
-      packName="$(lambda_package_name)" && \
-      bundle="$(lambda_bundle)" && \
+    layerName="$(lambdaLayerName)" && \
+      bucket="$(lambdaBucketName)" && \
+      packName="$(lambdaPackageName)" && \
+      bundle="$(lambdaBundle)" && \
       s3Path="s3://${bucket}/lambda/${packName}/${layerName}.zip" && \
       gen3_log_info "Uploading $s3Path" && \
       aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
@@ -128,16 +146,21 @@ lambda_upload() {
 # @param zipPath the s3://... path of the bundle.zip, 
 #           or a local file path to bundle up and copy to s3
 # 
-lambda_update_layer() {
+lambdaUpdateLayer() {
     local bundle
     local layerName
     local commandJson
+    local bucket
     
-    if ! layerName="$(lambda_layer_name)"; then
+    if ! bucket="$(lambdaBucketName)"; then
+        gen3_log_err "failed to determine lambda bucket"
+        return 1
+    fi
+    if ! layerName="$(lambdaLayerName)"; then
       gen3_log_err "failed to derive layer name, bailing out of layer update"
       return 1
     fi
-    if ! bundle="$(lambda_upload)"; then
+    if ! bundle="$(lambdaUpload)"; then
         gen3_log_err "failed to upload code bundle, bailing out of layer update"
         return 1
     fi
@@ -177,26 +200,29 @@ if [[ -z "${GEN3_SOURCE_ONLY}" ]]; then
     shift
 
     case "$command" in
+        "bucket")
+            lambdaBucketName "$@"
+            ;;
         "bundle")
-            lambda_bundle "$@"
+            lambdaBundle "$@"
             ;;
         "drun")
-            lambda_drun "$@"
+            lambdaDockerRun "$@"
             ;;
         "layer_name")
-            lambda_layer_name "$@"
+            lambdaLayerName "$@"
             ;;
         "package_name")
-            lambda_package_name "$@"
+            lambdaPackageName "$@"
             ;;
         "git_branch")
-            lambda_git_branch "$@"
+            lambdaGitBranch "$@"
             ;;
         "update")
-            lambda_update_layer "$@"
+            lambdaUpdateLayer "$@"
             ;;
         "upload")
-            lambda_upload "$@"
+            lambdaUpload "$@"
             ;;
         *)
             help
