@@ -1,4 +1,10 @@
 #
+# Note: leave this file with '_' naming instead of camel case
+#  as we copied this from github.com/uc-cdis/cloud-formation, and will
+#  be convenient to merge in patches later
+#
+
+#
 # Unit testing helpers:
 #   * shunit_runtest test_function
 #   * test that succeeds; shunit_because $? message

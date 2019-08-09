@@ -1,3 +1,9 @@
+#
+# Note: leave this file with '_' naming instead of camel case
+#  as we copied this from github.com/uc-cdis/cloud-formation, and will
+#  be convenient to merge in patches later
+#
+
 test_semver() {
   semver_ge "1.1.1" "1.1.0"; because $? "1.1.1 -ge 1.1.0"
   ! semver_ge "1.1.0" "1.1.1"; because $? "! 1.1.0 -ge 1.1.1"

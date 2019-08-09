@@ -11,29 +11,6 @@ _lambdaBucket=""
 # lib ------------------------
 
 
-lambdaBucketName() {
-    if [[ -n "$_lambdaBucket" ]]; then
-      echo "$_lambdaBucket"
-      return 0
-    fi
-
-    local profile="${AWS_PROFILE:-default}"
-    local region
-    local accountId
-    if ! region="$(aws --profile "$profile" configure get region)"; then
-        gen3_log_err "aws configure get region failed"
-        return 1
-    fi
-
-    if ! accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"; then
-        gen3_log_err "could not determine AWS account alias"
-        return 1
-    fi
-    _lambdaBucket="cloudformation-${accountId}-$region"
-    echo "$_lambdaBucket"
-    return 0
-}
-
 help() {
     bash "$LITTLE_HOME/bin/help.sh" lambda
 }
@@ -128,7 +105,7 @@ lambdaUpload() {
     local bucket
  
     layerName="$(lambdaLayerName)" && \
-      bucket="$(lambdaBucketName)" && \
+      bucket="$(arun stack bucket)" && \
       packName="$(lambdaPackageName)" && \
       bundle="$(lambdaBundle)" && \
       s3Path="s3://${bucket}/lambda/${packName}/${layerName}.zip" && \
@@ -152,7 +129,7 @@ lambdaUpdateLayer() {
     local commandJson
     local bucket
     
-    if ! bucket="$(lambdaBucketName)"; then
+    if ! bucket="$(arun stack bucket)"; then
         gen3_log_err "failed to determine lambda bucket"
         return 1
     fi
@@ -200,9 +177,6 @@ if [[ -z "${GEN3_SOURCE_ONLY}" ]]; then
     shift
 
     case "$command" in
-        "bucket")
-            lambdaBucketName "$@"
-            ;;
         "bundle")
             lambdaBundle "$@"
             ;;

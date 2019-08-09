@@ -3,7 +3,7 @@
 # Setup folder with package.json and git,
 # checkout a branch, and cd to the folder
 #
-test_setup_bogus() {
+testLamdaSetup() {
     local testDir
     testDir="$XDG_RUNTIME_DIR/$$_$RANDOM"
     mkdir -p "$testDir" && cd "$testDir";
@@ -31,10 +31,10 @@ EOM
     echo "$testDir"
 }
 
-test_package_name() {
+testLambdaPackageName() {
     local name
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir"; 
+    testDir="$(testLamdaSetup)" && cd "$testDir"; 
         because $? "test setup should succeed: $testDir"
     name="$(arun lambda package_name)" \
         && /bin/rm -rf "$testDir" \
@@ -42,10 +42,10 @@ test_package_name() {
         because $? "derived expected npm package name from package.json: $name"
 }
 
-test_git_branch() {
+testLambdaGitBranch() {
     local name
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir";
+    testDir="$(testLamdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
     name="$(arun lambda git_branch)" \
         && /bin/rm -rf "$testDir" \
@@ -53,10 +53,10 @@ test_git_branch() {
         because $? "derived expected git branch: $name"
 }
 
-test_layer_name() {
+testLambdaLayerName() {
     local name
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir"; 
+    testDir="$(testLamdaSetup)" && cd "$testDir"; 
         because $? "test setup should succeed: $testDir"
     name="$(arun lambda layer_name)" \
         && /bin/rm -rf "$testDir" \
@@ -64,10 +64,10 @@ test_layer_name() {
         because $? "derived expected lambda layer name from package.json and git branch: $name"
 }
 
-test_lambda_bundle() {
+testLambdaBundle() {
     local path
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir";
+    testDir="$(testLamdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
     path="$(arun lambda bundle)" \
         && [[ "$path" =~ /bundle.zip$ && -f "$path" ]] \
@@ -75,10 +75,10 @@ test_lambda_bundle() {
         because $? "arun lambda bundle creates a bundle.zip: $path"
 }
 
-test_lambda_upload() {
+testLambdaUpload() {
     local path
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir";
+    testDir="$(testLamdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
     path="$(arun lambda upload)" \
         && /bin/rm -rf "$testDir";
@@ -88,10 +88,10 @@ test_lambda_upload() {
     aws s3 ls "$path" > /dev/null 2>&1; because $? "arun lambda upload creats an s3 object at $path"
 }
 
-test_lambda_update() {
+testLambdaUpdate() {
     local data
     local testDir
-    testDir="$(test_setup_bogus)" && cd "$testDir";
+    testDir="$(testLamdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
     data="$(arun lambda update)" \
         && /bin/rm -rf "$testDir";
@@ -99,9 +99,9 @@ test_lambda_update() {
     jq -r .LayerVersionArn <<<"$data"; because $? "arun lambda update should return layer version data"
 }
 
-shunit_runtest "test_git_branch" "lambda"
-shunit_runtest "test_layer_name" "lambda"
-shunit_runtest "test_package_name" "lambda"
-shunit_runtest "test_lambda_bundle" "lambda"
-shunit_runtest "test_lambda_upload" "lambda"
-shunit_runtest "test_lambda_update" "lambda"
+shunit_runtest "testLambdaGitBranch" "lambda"
+shunit_runtest "testLambdaLayerName" "lambda"
+shunit_runtest "testLambdaPackageName" "lambda"
+shunit_runtest "testLambdaBundle" "lambda"
+shunit_runtest "testLambdaUpload" "lambda"
+shunit_runtest "testLambdaUpdate" "lambda"

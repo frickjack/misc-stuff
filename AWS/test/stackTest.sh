@@ -1,4 +1,4 @@
-test_stack_validate() {
+testStackValidate() {
   local templates
   local path
   templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type f -name '*.json' -o -name '*.yaml')"
@@ -7,4 +7,12 @@ test_stack_validate() {
   done
 }
 
-shunit_runtest "test_stack_validate" "stack"
+testStackBucketName() {
+  local bucket
+  bucket=$(arun stack bucket) && [[ "$bucket" =~ ^cloudformation-.+ ]];
+    because $? "arun stack bucket looks like cloudformation-account-region"
+}
+
+
+shunit_runtest "testStackBucketName" "stack"
+shunit_runtest "testStackValidate" "stack"

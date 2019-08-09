@@ -5,20 +5,33 @@ set -e
 
 # globals -------------------
 
-profile="${AWS_PROFILE:-default}"
-
-if ! region="$(aws --profile "$profile" configure get region)"; then
-    echo "ERROR: aws configure get region failed" 1>&2
-    return 1
-fi
-
-accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"
-bucket="cloudformation-${accountId}-$region"
-
 # lib ------------------------
 
+stackBucketName() {
+    if [[ -n "$_lambdaBucket" ]]; then
+      echo "$_lambdaBucket"
+      return 0
+    fi
+
+    local profile="${AWS_PROFILE:-default}"
+    local region
+    local accountId
+    if ! region="$(aws --profile "$profile" configure get region)"; then
+        gen3_log_err "aws configure get region failed"
+        return 1
+    fi
+
+    if ! accountId="$(aws iam list-account-aliases | jq -r '.AccountAliases[0]')"; then
+        gen3_log_err "could not determine AWS account alias"
+        return 1
+    fi
+    _lambdaBucket="cloudformation-${accountId}-$region"
+    echo "$_lambdaBucket"
+    return 0
+}
+
 help() {
-    bash "$LITTLE_HOME/bin/help.sh" stack
+    arun help stack
 }
 
 # 
@@ -36,6 +49,7 @@ apply() {
     local stackPath
     local stackName
     local s3Path
+    local bucket
 
     if [[ $# -lt 3 || ! $1 =~ ^-*(update|create)$ ]]; then
         echo "ERROR: apply must specify update or create" 1>&2
@@ -53,7 +67,7 @@ apply() {
     templatePath="$1"
     shift
     stackPath="$1"
-    shift
+    shift    
     if [[ ! -f "$templatePath" ]]; then
         echo "ERROR: unable to load template $templatePath" 1>&2
         return 1
@@ -63,7 +77,10 @@ apply() {
         return 1
     fi
     s3Path="cf/$stackName/${templatePath##*/}"
-   
+    if ! bucket=$(stackBucketName); then
+        gen3_log_err "failed to find cf bucket"
+        return 1
+    fi
     # uniquely identify the update-stack request
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
 
@@ -185,7 +202,7 @@ shift
 
 case "$command" in
     "bucket")
-        echo "$bucket"
+        stackBucketName "$@"
         ;;
     "create")
         create "$@"
