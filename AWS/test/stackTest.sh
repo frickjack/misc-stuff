@@ -13,6 +13,12 @@ testStackBucketName() {
     because $? "arun stack bucket looks like cloudformation-account-region"
 }
 
+testStackCreate() {
+  arun stack create --dryRun "${LITTLE_HOME}/db/cloudformation/frickjack/accountSetup/snsNotify/stackParams.json";
+    because $? "stack create --dryRun should run ok"
+}
+
 
 shunit_runtest "testStackBucketName" "stack"
+shunit_runtest "testStackCreate" "stack"
 shunit_runtest "testStackValidate" "stack"

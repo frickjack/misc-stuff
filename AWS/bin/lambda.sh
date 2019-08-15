@@ -4,10 +4,6 @@
 
 source "${LITTLE_HOME}/lib/bash/utils.sh"
 
-# globals --------------------
-
-_lambdaBucket=""
-
 # lib ------------------------
 
 
@@ -28,13 +24,21 @@ lambdaPackageName() {
 }
 
 #
+# Get the npm package version from the `package.json`
+# in the current directory
+#
+lambdaPackageVersion() {
+    if [[ ! -f package.json ]]; then
+        gen3_log_err "no file ./package.json in current folder"
+        return 1
+    fi
+    jq -e -r .version < ./package.json
+}
+
+#
 # Get the git branch of the current directory
 #
 lambdaGitBranch() {
-    if [[ ! -d .git ]]; then
-        gen3_log_err "no .git/ folder in current folder"
-        return 1
-    fi
     git rev-parse --abbrev-ref HEAD
 }
 
@@ -44,13 +48,15 @@ lambdaGitBranch() {
 # git (or whatever) git branch.  Removes illegal
 # characters, etc.
 #
-# @param packageName or defaults to lambada_pack_name if not given
-# @param branchName or defaults to lambada_pack_name if not given
+# @param packageName or defaults to lambadaPackName if not given
+# @param packageVersion or defaults to lambdaPackVersion if not given
+# @param branchName or defaults to lambadaGitBranch if not given
 # @return echo the sanitized layer name
 #
 lambdaLayerName() {
     local name
     local packName=""
+    local packVersion=""
     local gitBranch=""
 
     if [[ $# -gt 0 ]]; then
@@ -58,14 +64,20 @@ lambdaLayerName() {
       shift
     fi
     if [[ $# -gt 0 ]]; then
+      packVersion="$1"
+      shift
+    fi
+    if [[ $# -gt 0 ]]; then
       gitBranch="$1"
       shift
     fi
-    if ! packName="${packName:-$(lambdaPackageName)}" || ! gitBranch="${gitBranch:-$(lambdaGitBranch)}"; then
-      gen3_log_err "failed to determine package name and git branch from arguments or current folder $(pwd): $@"
+    if ! packName="${packName:-$(lambdaPackageName)}" \
+        || ! packVersion="${packName:-$(lambdaPackageVersion)}" \
+        || ! gitBranch="${gitBranch:-$(lambdaGitBranch)}"; then
+      gen3_log_err "failed to determine package name, version, and git branch from arguments or current folder $(pwd): $@"
       return 1
     fi
-    name="${packName}-${gitBranch}"
+    name="${packName}-${packVersion}-${gitBranch}"
     echo "${name//[ \/@]/_}"
 }
 
@@ -76,10 +88,10 @@ lambdaDockerRun() {
 
 #
 # Zip up the current folder assuming
-# its a nodejs folder
+# it's a nodejs folder
 #
 lambdaBundle() {
-    if ! [[ -d .git && -f ./package.json ]]; then
+    if ! (lambdaGitBranch && [[ -f ./package.json ]]); then
         gen3_log_err "lambda package bailing out - missing .git or package.json"
         return 1
     fi
@@ -94,50 +106,72 @@ lambdaBundle() {
 # Publish the bundle.zip in the current
 # folder to S3 folder
 #
-# @param zipPath path to a local directory path to bundle up and copy to s3
+# @param zipPath path to a local directory path to bundle up and copy to s3 - default to current folder
 # 
 lambdaUpload() {
     local bundle
     local branch
     local cleanBranch
     local packName
+    local s3Folder
     local s3Path
     local bucket
- 
-    layerName="$(lambdaLayerName)" && \
-      bucket="$(arun stack bucket)" && \
-      packName="$(lambdaPackageName)" && \
-      bundle="$(lambdaBundle)" && \
-      s3Path="s3://${bucket}/lambda/${packName}/${layerName}.zip" && \
-      gen3_log_info "Uploading $s3Path" && \
-      aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
-      echo $s3Path
+    local zipPath="."
+
+    if [[ $# -gt 0 ]]; then
+      zipPath="$1"
+      shift
+    fi
+    if [[ ! -d "$zipPath" ]]; then
+        gen3_log_err "no such folder: $zipPath"
+        return 1
+    fi
+    (
+        cd "$zipPath" && \
+            layerName="$(lambdaLayerName)" && \
+            bucket="$(arun stack bucket)" && \
+            packName="$(lambdaPackageName)" && \
+            bundle="$(lambdaBundle)" && \
+            s3Folder="s3://${bucket}/lambda/${packName}/${layerName}/" && \
+            # clean up old packages
+            (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
+            s3Path="${s3Folder}/bundle-$(date -u +%Y%m%d_%H%M%S).zip" && \
+            gen3_log_info "Uploading $s3Path" && \
+            aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
+            echo $s3Path
+    )
+    return $?
 }
 
 #
 # Publish the bundle.zip in the current
 # folder.  Copy to S3 folder, then
-# publish to lambda layer under dev/${package_name}_${branch}
+# publish to lambda layer under dev/${package_name}_${package_version}_${branch}
 #
-# @param layerName the lambda layer to update with the new code
-# @param zipPath the s3://... path of the bundle.zip, 
-#           or a local file path to bundle up and copy to s3
+# @param zipPath the s3://... path of the local folder path to bundle up and copy to s3 -
+#           defaults to current folder
 # 
 lambdaUpdateLayer() {
     local bundle
     local layerName
     local commandJson
     local bucket
+    local zipPath="."
+
+    if [[ $# -gt 0 ]]; then
+      zipPath="$1"
+      shift
+    fi
     
     if ! bucket="$(arun stack bucket)"; then
         gen3_log_err "failed to determine lambda bucket"
         return 1
     fi
-    if ! layerName="$(lambdaLayerName)"; then
+    if ! layerName="$(cd "$zipPath" && lambdaLayerName)"; then
       gen3_log_err "failed to derive layer name, bailing out of layer update"
       return 1
     fi
-    if ! bundle="$(lambdaUpload)"; then
+    if ! bundle="$(lambdaUpload "$zipPath" "$@")"; then
         gen3_log_err "failed to upload code bundle, bailing out of layer update"
         return 1
     fi

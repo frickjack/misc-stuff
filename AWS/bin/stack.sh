@@ -1,15 +1,16 @@
 #!/bin/bash
 
+source "${LITTLE_HOME}/lib/bash/utils.sh"
 
-set -e
+# globals --------------------
 
-# globals -------------------
+_stackBucket=""
 
 # lib ------------------------
 
 stackBucketName() {
-    if [[ -n "$_lambdaBucket" ]]; then
-      echo "$_lambdaBucket"
+    if [[ -n "$_stackBucket" ]]; then
+      echo "$_stackBucket"
       return 0
     fi
 
@@ -25,8 +26,8 @@ stackBucketName() {
         gen3_log_err "could not determine AWS account alias"
         return 1
     fi
-    _lambdaBucket="cloudformation-${accountId}-$region"
-    echo "$_lambdaBucket"
+    _stackBucket="cloudformation-${accountId}-$region"
+    echo "$_stackBucket"
     return 0
 }
 
@@ -38,7 +39,6 @@ help() {
 # Apply a cloudformation update or create
 #
 # @param commandStr --update or --create
-# @param templatePath
 # @param stackPath
 #
 apply() {
@@ -50,32 +50,46 @@ apply() {
     local stackName
     local s3Path
     local bucket
+    local dryRun=false
 
-    if [[ $# -lt 3 || ! $1 =~ ^-*(update|create)$ ]]; then
-        echo "ERROR: apply must specify update or create" 1>&2
+    if [[ $# -lt 2 || ! $1 =~ ^-*(update|create)$ ]]; then
+        gen3_log_err "apply must specify update or create"
         return 1
     fi
-    if [[ $1 =~ ^-*update$ ]]; then
-        commandStr="update-stack"
-    elif [[ "$1" =~ ^-*create$ ]]; then
-        commandStr="create-stack"
-    else
-        echo "ERROR: invalid apply command: $@" 1>&2
+    while [[ "$1" =~ ^-+ ]]; do
+        gen3_log_info "processing: $1"
+        if [[ $1 =~ ^-*update$ ]]; then
+            commandStr="update-stack"
+        elif [[ "$1" =~ ^-*create$ ]]; then
+            commandStr="create-stack"
+        elif [[ "$1" =~ ^-*dryRun ]]; then
+            dryRun=true
+        fi
+        shift
+    done
+    if [[ $# -lt 1 || ! -f "$1" ]]; then
+        gen3_log_err "invalid stack path: $1"
         return 1
     fi
-    shift
-    templatePath="$1"
-    shift
     stackPath="$1"
-    shift    
+    shift
+    if [[ -z "$commandStr" ]]; then
+        gen3_log_err "invalid apply command, must specify --create or --update"
+        return 1
+    fi
+    if ! templatePath="$(jq -r -e .templatePath < "$stackPath")" || ! [[ -f "$templatePath" ]]; then
+        gen3_log_err "templatePath does not exist: ${templatePath}"
+        return 1
+    fi
     if [[ ! -f "$templatePath" ]]; then
-        echo "ERROR: unable to load template $templatePath" 1>&2
+        gen3_log_err "unable to load template $templatePath"
         return 1
     fi
     if [[ ! -f "$stackPath" || ! stackName="$(jq -r -e .StackName < "$stackPath")" ]]; then
-        echo "ERROR: unable to load stackName from $stackPath" 1>&2
+        gen3_log_err "unable to load stackName from $stackPath"
         return 1
     fi
+
     s3Path="cf/$stackName/${templatePath##*/}"
     if ! bucket=$(stackBucketName); then
         gen3_log_err "failed to find cf bucket"
@@ -90,11 +104,31 @@ apply() {
     skeleton="$(
         cat "$stackPath" | \
         jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \
-        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token'    
+        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token'
     )"
+
+    local stackDir="${stackPath%/*}"
+    #
+    # Upload the lambda code package to S3, and
+    # set the LambdaBucket and LambdaKey parameters
+    #
+    if [[ -d "${stackDir}/code" ]]; then
+        gen3_log_info "uploading stack code/ to s3"
+        local s3CodePath
+        if ! s3CodePath="$(arun lambda upload)"; then
+            gen3_log_err "failed to stage code/ to s3"
+            return 1
+        fi
+        skeleton="$(
+            clean="${s3CodePath#s3://}"
+            bucket="${clean%%/*}"
+            key="/${clean#*/}"
+            jq -r --arg lambdaKey "${key}" --arg lambdaBucket "${bucket}" '.Parameters += [{ "ParameterKey": "LambdaBucket", "ParameterValue": $bucket }, { "ParameterKey": "LambdaKey", "ParameterValue": $key } ]' <<<"$skeleton"
+            )"
+    fi
     if [[ "$commandStr" == "update-stack" ]]; then
         if ! skeleton="$(echo "$skeleton" | jq -r -e 'del(.TimeoutInMinutes) | del(.EnableTerminationProtection)')"; then
-            echo "ERROR: failed to process $skeleton" 1>&2
+            gen3_log_err "failed to process $skeleton"
             return 1
         fi
     fi
@@ -102,8 +136,14 @@ apply() {
 INFO: attempting to update stack:
 $skeleton
 EOM
-    if aws cloudformation "${commandStr}" --cli-input-json "$skeleton"; then
-      echo "INFO: Successfully submitted stack: $stackName" 1>&2
+    if [[ "$dryRun" != "false" ]]; then
+        gen3_log_info "Dry-run not submitting stack: $stackName"
+        return 0
+    elif aws cloudformation "${commandStr}" --cli-input-json "$skeleton"; then
+        gen3_log_info "Successfully submitted stack: $stackName"
+        return 0
+    else
+        return 1
     fi
 }
 

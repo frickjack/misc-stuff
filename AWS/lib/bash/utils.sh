@@ -23,7 +23,6 @@ export XDG_RUNTIME_DIR
 
 CURRENT_SHELL="$(echo $SHELL | awk -F'/' '{print $NF}')"
 
-
 (
   for filePath in "$XDG_RUNTIME_DIR"; do
     if [[ ! -d "$filePath" ]]; then

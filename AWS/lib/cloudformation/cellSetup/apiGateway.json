@@ -5,9 +5,8 @@
       "Type" : "AWS::Lambda::Function",
       "Properties" : {
         "Code" : {
-          "S3Bucket" : { },
-          "S3Key" : String,
-          "ZipFile" : "const bridge = requre('/opt/authn/commonjs/bin/oidcClient/lambdaBridge.js'); exports.lambdaHandler = bridge.lambdaHandler"
+          "S3Bucket" : { "Ref": "LambdaBucket" },
+          "S3Key" : { "Ref": "LambdaKey" }
         },
         "Description" : "hello test function",
         "Environment" : {
@@ -61,6 +60,16 @@
       "Description": "dev stage associated with this stack (prod, pre-prod, qa, dev)",
       "Default" : "prod",
       "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
+    },
+    "LambdaBucket": {
+      "Type": "String",
+      "Description": "bucket of s3 with lambda package",
+      "ConstraintDescription": "must be a valid s3 bucket"
+    },
+    "LambdaKey": {
+      "Type": "String",
+      "Description": "key of s3 path to lambda package",
+      "ConstraintDescription": "must be a valid s3 object key"
     }
   }
 }
