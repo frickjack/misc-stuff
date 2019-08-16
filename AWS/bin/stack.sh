@@ -77,7 +77,7 @@ apply() {
         gen3_log_err "invalid apply command, must specify --create or --update"
         return 1
     fi
-    if ! templatePath="$(jq -r -e .templatePath < "$stackPath")" || ! [[ -f "$templatePath" ]]; then
+    if ! templatePath="${LITTLE_HOME}/$(jq -r -e .Littleware.TemplatePath < "$stackPath")" || ! [[ -f "$templatePath" ]]; then
         gen3_log_err "templatePath does not exist: ${templatePath}"
         return 1
     fi
@@ -85,10 +85,11 @@ apply() {
         gen3_log_err "unable to load template $templatePath"
         return 1
     fi
-    if [[ ! -f "$stackPath" || ! stackName="$(jq -r -e .StackName < "$stackPath")" ]]; then
+    if [[ ! -f "$stackPath" ]] || ! stackName="$(jq -r -e .StackName < "$stackPath")"; then
         gen3_log_err "unable to load stackName from $stackPath"
         return 1
     fi
+    gen3_log_info "Got stack name: $stackName"
 
     s3Path="cf/$stackName/${templatePath##*/}"
     if ! bucket=$(stackBucketName); then
@@ -100,7 +101,6 @@ apply() {
 
     aws cloudformation validate-template --template-body "$(cat "$templatePath")"
     aws s3 cp "$templatePath" "s3://${bucket}/$s3Path"
-
     skeleton="$(
         cat "$stackPath" | \
         jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \

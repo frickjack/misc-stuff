@@ -28,5 +28,8 @@
               "Key": "role",
               "Value": "notify-general"
             }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/accountSetup/snsNotify.json"
+    }
 }
