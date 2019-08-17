@@ -72,7 +72,7 @@ lambdaLayerName() {
       shift
     fi
     if ! packName="${packName:-$(lambdaPackageName)}" \
-        || ! packVersion="${packName:-$(lambdaPackageVersion)}" \
+        || ! packVersion="${packVersion:-$(lambdaPackageVersion)}" \
         || ! gitBranch="${gitBranch:-$(lambdaGitBranch)}"; then
       gen3_log_err "failed to determine package name, version, and git branch from arguments or current folder $(pwd): $@"
       return 1
@@ -91,7 +91,7 @@ lambdaDockerRun() {
 # it's a nodejs folder
 #
 lambdaBundle() {
-    if ! (lambdaGitBranch && [[ -f ./package.json ]]); then
+    if ! (lambdaGitBranch > /dev/null && [[ -f ./package.json ]]); then
         gen3_log_err "lambda package bailing out - missing .git or package.json"
         return 1
     fi
@@ -132,11 +132,11 @@ lambdaUpload() {
             bucket="$(arun stack bucket)" && \
             packName="$(lambdaPackageName)" && \
             bundle="$(lambdaBundle)" && \
-            s3Folder="s3://${bucket}/lambda/${packName}/${layerName}/" && \
+            s3Folder="s3://${bucket}/lambda/${packName}/${layerName}" && \
             # clean up old packages
             (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
             s3Path="${s3Folder}/bundle-$(date -u +%Y%m%d_%H%M%S).zip" && \
-            gen3_log_info "Uploading $s3Path" && \
+            gen3_log_info "Uploading $bundle to $s3Path" && \
             aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
             echo $s3Path
     )
