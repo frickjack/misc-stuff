@@ -46,7 +46,7 @@ lambdaGitBranch() {
 # Derive a sanitized lambda layer name from the
 # given nodejs (or whatever) package name and
 # git (or whatever) git branch.  Removes illegal
-# characters, etc.
+# characters, etc., starts with a letter
 #
 # @param packageName or defaults to lambadaPackName if not given
 # @param packageVersion or defaults to lambdaPackVersion if not given
@@ -78,7 +78,8 @@ lambdaLayerName() {
       return 1
     fi
     name="${packName}-${packVersion}-${gitBranch}"
-    echo "${name//[ \/@]/_}"
+    # do some cleanup - remove illegal characters, start with a letter
+    echo "${name//[ \/@.]/_}"
 }
 
 
@@ -198,7 +199,7 @@ lambdaUpdateLayer() {
     }
 EOM
     )
-    cat - 1>&2 <<<$commandJson
+    jq -r . 1>&2 <<< "$commandJson"
     aws lambda publish-layer-version --cli-input-json "$commandJson"
 }
 

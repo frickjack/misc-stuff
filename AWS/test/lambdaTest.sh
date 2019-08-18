@@ -61,7 +61,7 @@ testLambdaLayerName() {
         because $? "test setup should succeed: $testDir"
     name="$(arun lambda layer_name)" \
         && /bin/rm -rf "$testDir" \
-        && [[ "$name" == '_littleware_bogus-1.0.0-frickjack' ]];
+        && [[ "$name" == '_littleware_bogus-1_0_0-frickjack' ]];
         because $? "derived expected lambda layer name from package.json and git branch: $name"
 }
 
@@ -84,7 +84,7 @@ testLambdaUpload() {
     path="$(arun lambda upload)" \
         && /bin/rm -rf "$testDir";
         because $? "arun lambda upload should succeed: $path"
-    [[ "$path" =~ ^s3://.+/@littleware/bogus/_littleware_bogus-1.0.0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
+    [[ "$path" =~ ^s3://.+/@littleware/bogus/_littleware_bogus-1_0_0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
         because $? "arun lambda upload uploads a bundle.zip: $path"
     aws s3 ls "$path" > /dev/null 2>&1; because $? "arun lambda upload creats an s3 object at $path"
 }
