@@ -32,5 +32,8 @@
               "Key": "role",
               "Value": "authz-general"
             }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/accountSetup/iamSetup.json"
+    }
 }

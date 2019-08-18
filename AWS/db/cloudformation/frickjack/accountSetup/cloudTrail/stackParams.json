@@ -31,5 +31,8 @@
               "Key": "role",
               "Value": "monitoring"
             }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/accountSetup/cloudTrail.json"
+    }
 }

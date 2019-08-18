@@ -28,5 +28,8 @@
               "Key": "role",
               "Value": "monitoring"
             }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/accountSetup/guardDuty.json"
+    }
 }

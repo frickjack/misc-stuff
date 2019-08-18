@@ -35,5 +35,8 @@
             "Key": "role",
             "Value": "authn"
         }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/tenantSetup/cognito.json"
+    }
 }
