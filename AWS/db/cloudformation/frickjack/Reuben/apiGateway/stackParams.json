@@ -12,6 +12,14 @@
         {
             "ParameterKey": "StageName",
             "ParameterValue": "dev"
+        },
+        {
+            "ParameterKey": "LambdaLayers",
+            "ParameterValue": "arn:aws:lambda:us-east-2:027326493842:layer:_littleware_little-authn-master:1"
+        },
+        {
+            "ParameterKey": "LambdaRole",
+            "ParameterValue": "arn:aws:iam::027326493842:role/littleware/account/service/littleLamda"
         }
     ],
     "Tags": [
@@ -35,5 +43,8 @@
               "Key": "role",
               "Value": "api"
             }
-    ]
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/cellSetup/apiGateway.json"
+    }
 }

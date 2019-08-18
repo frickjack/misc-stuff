@@ -16,9 +16,9 @@
         },
         "FunctionName" : { "Fn::Join": [ "-", ["api.frickjack.com", { "Ref": "StackName" }, { "Ref": "StageName" }, "authn"]] },
         "Handler" : "index.lambdaHandler",
-        "Layers" : [ "arn:aws:lambda:us-east-2:027326493842:layer:_littleware_little-authn-master:1" ],
+        "Layers" : { "Ref": "LambdaLayers" },
         "MemorySize" : 256,
-        "Role" : "arn:aws:iam::027326493842:role/littleware/account/service/littleLamda",
+        "Role" : { "Ref": "LambdaRole" },
         "Runtime" : "nodejs10.x",
         "Tags": [
           {
@@ -70,6 +70,16 @@
       "Type": "String",
       "Description": "key of s3 path to lambda package",
       "ConstraintDescription": "must be a valid s3 object key"
+    },
+    "LambdaLayers": {
+      "Type": "CommaDelimitedList",
+      "Description": "Lambda layer ARN list",
+      "ConstraintDescription": "comma separated list of lambda layer arn's"
+    },
+    "LambdaRole": {
+      "Type": "String",
+      "Description": "arn of IAM role for lambda execution to assume",
+      "ConstraintDescription": "IAM role arn"
     }
   }
 }
