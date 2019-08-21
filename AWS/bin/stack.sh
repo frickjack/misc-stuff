@@ -104,7 +104,8 @@ apply() {
     skeleton="$(
         cat "$stackPath" | \
         jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \
-        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token'
+        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token' | \
+        jq -r -e 'del(.Littleware)'
     )"
 
     local stackDir="${stackPath%/*}"
@@ -115,15 +116,15 @@ apply() {
     if [[ -d "${stackDir}/code" ]]; then
         gen3_log_info "uploading stack code/ to s3"
         local s3CodePath
-        if ! s3CodePath="$(arun lambda upload)"; then
+        if ! s3CodePath="$(arun lambda upload "${stackDir}/code")"; then
             gen3_log_err "failed to stage code/ to s3"
             return 1
         fi
         skeleton="$(
             clean="${s3CodePath#s3://}"
             bucket="${clean%%/*}"
-            key="/${clean#*/}"
-            jq -r --arg lambdaKey "${key}" --arg lambdaBucket "${bucket}" '.Parameters += [{ "ParameterKey": "LambdaBucket", "ParameterValue": $bucket }, { "ParameterKey": "LambdaKey", "ParameterValue": $key } ]' <<<"$skeleton"
+            key="${clean#*/}"
+            jq -r --arg key "${key}" --arg bucket "${bucket}" '.Parameters += [{ "ParameterKey": "LambdaBucket", "ParameterValue": $bucket }, { "ParameterKey": "LambdaKey", "ParameterValue": $key } ]' <<<"$skeleton"
             )"
     fi
     if [[ "$commandStr" == "update-stack" ]]; then

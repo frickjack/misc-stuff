@@ -1,3 +1,3 @@
-const bridge = requre('/opt/authn/commonjs/bin/oidcClient/lambdaBridge.js'); 
+const bridge = require('/opt/commonjs/bin/oidcClient/lambdaBridge.js'); 
 
 exports.lambdaHandler = bridge.lambdaHandler
