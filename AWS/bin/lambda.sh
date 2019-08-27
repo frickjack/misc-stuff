@@ -134,8 +134,12 @@ lambdaUpload() {
             packName="$(lambdaPackageName)" && \
             bundle="$(lambdaBundle)" && \
             s3Folder="s3://${bucket}/lambda/${packName}/${layerName}" && \
-            # clean up old packages
-            (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
+            #
+            # do not clean up old packages at this time -
+            # it can screw up cloudformation rollback if
+            # a stack references a key
+            #
+            # (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
             s3Path="${s3Folder}/bundle-$(date -u +%Y%m%d_%H%M%S).zip" && \
             gen3_log_info "Uploading $bundle to $s3Path" && \
             aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
