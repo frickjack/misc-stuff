@@ -220,15 +220,40 @@ EOM
     aws cloudformation list-stacks --cli-input-json "${cliInput}"
 }
 
-validate() {
+validateTemplate() {
+    local templateStr
+    templateStr="$(filterTemplate "$@")"
+    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+}
+
+filterTemplate() {
+    local templateFolder
     local templatePath
-    if [[ $# -lt 1 ]]; then
-      echo "ERROR: validate requires path to template" 1>&2
+    local templateStr
+    if [[ $# -lt 1 || ! -f "$1" ]]; then
+      gen3_log_err "validate requires path to template: $@"
       return 1
     fi
     templatePath="$1"
     shift
-    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+    templateFolder="$(dirname "$1")"
+    if ! templateStr="$(jq -e -r . < "$templatePath")"; then
+      gen3_log_err "Template failed json validation: $templatePath"
+      return 1
+    fi
+    local openapi="{}"
+    if [[ -f "${templateFolder}/openapi.yaml" ]]; then
+        if ! openapi="$(yq -e -r . < "${templateFolder}/openapi.yaml")"; then
+          gen3_log_err "failed to parse ${templateFolder}/openapi.yaml"
+          return 1
+        fi
+    elif [[ -f "${templateFolder}/openapi.json" ]]; then
+        if ! openapi="$(jq -e -r . < "${templateFolder}/openapi.json")"; then
+          gen3_log_err "failed to parse ${templateFolder}/openapi.json"
+          return 1
+        fi
+    fi
+    jq -e --argjson openapi "${openapi}" -r '.Resources=(.Resources | map_values(if .Type == "AWS::ApiGateway::RestApi" then .Properties.Body=$openapi else . end))' <<< "$templateStr"
 }
 
 # main -----------------
@@ -260,8 +285,11 @@ case "$command" in
     "update")
         update "$@"
         ;;
-    "validate")
-        validate "$@"
+    "validate-template")
+        validateTemplate "$@"
+        ;;
+    "filter-template")
+        filterTemplate "$@"
         ;;
     *)
         help
