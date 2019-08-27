@@ -1,5 +1,6 @@
 *.env
 *.zip
+*.bak
 .terraform/
 
 # Byte-compiled / optimized / DLL files

@@ -44,10 +44,19 @@ Retrieve the event log for a stack
 arun stack update path/to/template path/to/cli-parameters.json
 ```
 
-### validate
+### filter-template
 
-Validate a cloudformation template
+Apply filters to a cloudformation template.
+Currently the only filter inlines an `openapi.yaml` or `openapi.json` file in the template directory as the `Body` property
 
 ```
-arun stack validate path/to/template
+arun stack filter-template path/to/template
+```
+
+### validate-template
+
+Validate a filtered (see filter-template) cloudformation template
+
+```
+arun stack validate-template path/to/template
 ```

@@ -1,5 +1,38 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "StackName": {
+      "Type": "String",
+      "Description": "deployment stack - ex api.frickjack.com, reuben.dev.frickjack.com, ...",
+      "ConstraintDescription": "should usually be the domain of the deployment"
+    },
+    "StageName": {
+      "Type": "String",
+      "Description": "dev stage associated with this stack (prod, pre-prod, qa, dev)",
+      "Default" : "prod",
+      "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
+    },
+    "LambdaBucket": {
+      "Type": "String",
+      "Description": "bucket of s3 with lambda package",
+      "ConstraintDescription": "must be a valid s3 bucket"
+    },
+    "LambdaKey": {
+      "Type": "String",
+      "Description": "key of s3 path to lambda package",
+      "ConstraintDescription": "must be a valid s3 object key"
+    },
+    "LambdaLayers": {
+      "Type": "CommaDelimitedList",
+      "Description": "Lambda layer ARN list",
+      "ConstraintDescription": "comma separated list of lambda layer arn's"
+    },
+    "LambdaRole": {
+      "Type": "String",
+      "Description": "arn of IAM role for lambda execution to assume",
+      "ConstraintDescription": "IAM role arn"
+    }
+  },
   "Resources": {
     "apiLambda": {
       "Type" : "AWS::Lambda::Function",
@@ -47,39 +80,31 @@
           "Mode": "Active"
         }
       }
-    }
-  },
-  "Parameters": {
-    "StackName": {
-      "Type": "String",
-      "Description": "deployment stack - ex api.frickjack.com, reuben.dev.frickjack.com, ...",
-      "ConstraintDescription": "should usually be the domain of the deployment"
     },
-    "StageName": {
-      "Type": "String",
-      "Description": "dev stage associated with this stack (prod, pre-prod, qa, dev)",
-      "Default" : "prod",
-      "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
+    "lambdaPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:invokeFunction",
+        "FunctionName": {"Fn::GetAtt": ["apiLambda", "Arn"]},
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {"Fn::Join": ["", 
+          ["arn:aws:execute-api:", {"Ref": "AWS::Region"}, ":", {"Ref": "AWS::AccountId"}, ":", {"Ref": "apiGateway"}, "/*"]
+        ]}
+      }
     },
-    "LambdaBucket": {
-      "Type": "String",
-      "Description": "bucket of s3 with lambda package",
-      "ConstraintDescription": "must be a valid s3 bucket"
-    },
-    "LambdaKey": {
-      "Type": "String",
-      "Description": "key of s3 path to lambda package",
-      "ConstraintDescription": "must be a valid s3 object key"
-    },
-    "LambdaLayers": {
-      "Type": "CommaDelimitedList",
-      "Description": "Lambda layer ARN list",
-      "ConstraintDescription": "comma separated list of lambda layer arn's"
-    },
-    "LambdaRole": {
-      "Type": "String",
-      "Description": "arn of IAM role for lambda execution to assume",
-      "ConstraintDescription": "IAM role arn"
+    "apiGateway": {
+      "Type" : "AWS::ApiGateway::RestApi",
+      "Properties" : {
+          "Description" : "simple call-through to lambda api",
+          "EndpointConfiguration" : {
+            "Types": ["EDGE"]
+          },
+          "MinimumCompressionSize" : 128,
+          "Name" : { "Fn::Join": [ "-", ["api_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }]] },
+          "Body": {
+            "info": "arun stack commands insert openapi.yaml here"
+          }
+        }
     }
   }
 }
