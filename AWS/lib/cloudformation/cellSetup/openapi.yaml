@@ -35,8 +35,6 @@ paths:
           schema:
             $ref: '#/definitions/Message'
       x-amazon-apigateway-integration:
-        credentials: 
-          Fn::Sub: "arn:aws:iam::${AWS::Account}:role/littleware/account/service/littleLamda"
         responses:
           default:
             statusCode: 200

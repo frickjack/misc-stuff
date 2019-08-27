@@ -100,7 +100,11 @@ apply() {
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
 
     aws cloudformation validate-template --template-body "$(cat "$templatePath")"
-    aws s3 cp "$templatePath" "s3://${bucket}/$s3Path"
+    local filteredTemplate
+    filteredTemplate="$(mktemp "${XDG_RUNTIME_DIR}/templateFilter_XXXXXX")"
+    filterTemplate "$templatePath" | tee "$filteredTemplate" 1>&2
+    aws s3 cp "$filteredTemplate" "s3://${bucket}/$s3Path"
+    rm "$filteredTemplate"
     skeleton="$(
         cat "$stackPath" | \
         jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \
@@ -236,7 +240,7 @@ filterTemplate() {
     fi
     templatePath="$1"
     shift
-    templateFolder="$(dirname "$1")"
+    templateFolder="$(dirname "$templatePath")"
     if ! templateStr="$(jq -e -r . < "$templatePath")"; then
       gen3_log_err "Template failed json validation: $templatePath"
       return 1
@@ -252,6 +256,8 @@ filterTemplate() {
           gen3_log_err "failed to parse ${templateFolder}/openapi.json"
           return 1
         fi
+    else
+        gen3_log_info "no openapi file found in $templateFolder"
     fi
     jq -e --argjson openapi "${openapi}" -r '.Resources=(.Resources | map_values(if .Type == "AWS::ApiGateway::RestApi" then .Properties.Body=$openapi else . end))' <<< "$templateStr"
 }
