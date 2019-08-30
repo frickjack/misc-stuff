@@ -31,6 +31,11 @@
       "Type": "String",
       "Description": "arn of IAM role for lambda execution to assume",
       "ConstraintDescription": "IAM role arn"
+    },
+    "GatewayRole": {
+      "Type": "String",
+      "Description": "arn of IAM role for gateway to assume",
+      "ConstraintDescription": "IAM role arn"
     }
   },
   "Resources": {
@@ -105,6 +110,37 @@
             "info": "arun stack commands insert openapi.yaml here"
           }
         }
+    },
+    "apiStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": {"Ref": "apiDeployment"},
+        "MethodSettings": [{
+          "DataTraceEnabled": true,
+          "HttpMethod": "*",
+          "LoggingLevel": "INFO",
+          "ResourcePath": "/*"
+        }],
+        "RestApiId": {"Ref": "apiGateway"},
+        "StageName": "api"
+      }
+    },
+
+    "apiDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {"Ref": "apiGateway"},
+        "StageName": "DummyStage"
+      }
+    }
+  },
+
+  "Outputs": {
+    "RootUrl": {
+      "Description": "Root URL of the API gateway",
+      "Value": {"Fn::Join": ["",
+        ["https://", {"Ref": "apiGateway"}, ".execute-api.", {"Ref": "AWS::Region"}, ".amazonaws.com"]
+      ]}
     }
   }
 }

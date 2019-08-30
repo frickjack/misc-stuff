@@ -20,6 +20,10 @@
         {
             "ParameterKey": "LambdaRole",
             "ParameterValue": "arn:aws:iam::027326493842:role/littleware/account/service/littleLamda"
+        },
+        {
+            "ParameterKey": "GatewayRole",
+            "ParameterValue": "arn:aws:iam::027326493842:role/littleGateway"
         }
     ],
     "Tags": [
