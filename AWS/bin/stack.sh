@@ -99,7 +99,12 @@ apply() {
     # uniquely identify the update-stack request
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
 
-    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+    if ! aws cloudformation validate-template --template-body "$(cat "$templatePath")"; then
+        gen3_log_err "template validation failed"
+        return 1
+    else
+        gen3_log_info "template validation ok"
+    fi
     local filteredTemplate
     filteredTemplate="$(mktemp "${XDG_RUNTIME_DIR}/templateFilter_XXXXXX")"
     filterTemplate "$templatePath" | tee "$filteredTemplate" 1>&2
@@ -112,7 +117,7 @@ apply() {
         jq -r -e 'del(.Littleware)'
     )"
 
-    local stackDir="${stackPath%/*}"
+    local stackDir="$(dirname "$stackPath")"
     #
     # Upload the lambda code package to S3, and
     # set the LambdaBucket and LambdaKey parameters

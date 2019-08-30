@@ -7,6 +7,13 @@ a generic application:
 * Cloudfront distribution with S3 bucket for webapp files - `apps.domain`
 * API gateway configured as an OAUTH client with cognito - `api.domain`
 
+## Overview
+
+Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-account.html) resource to give `apigateway` access to `cloudwatch logs`.  You'll need to create that resource yourself or add it to this template if you do not deploy the iamSetups stack.
+
+ First deployed api gets an endpoint of form: https://{api-id}.execute-api.{region}.amazonaws.com
+
+
 ## Resources
 
 * https://gist.github.com/singledigit/2c4d7232fa96d9e98a3de89cf6ebe7a5
