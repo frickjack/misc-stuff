@@ -2,6 +2,7 @@
 *.zip
 *.bak
 .terraform/
+Chef/nodes
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
