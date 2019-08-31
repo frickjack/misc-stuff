@@ -35,10 +35,17 @@ help() {
     arun help stack
 }
 
+getChangeSetName() {
+    local changeSetName="little-${USER}-${HOSTNAME}"
+    changeSetName="${changeSetName//[._ ]/-}"
+    echo "$changeSetName"
+}
+
 # 
 # Apply a cloudformation update or create
 #
-# @param commandStr --update or --create
+# @param commandStr --update or --create or --change
+# @param dryRun optional [--dryRun]
 # @param stackPath
 #
 apply() {
@@ -51,19 +58,30 @@ apply() {
     local s3Path
     local bucket
     local dryRun=false
+    local changeSetName="$(getChangeSetName)"
 
-    if [[ $# -lt 2 || ! $1 =~ ^-*(update|create)$ ]]; then
-        gen3_log_err "apply must specify update or create"
+    if [[ $# -lt 2 || ! $1 =~ ^-*(update|create|changeset)$ ]]; then
+        gen3_log_err "apply must specify update or create or changeset"
         return 1
     fi
-    while [[ "$1" =~ ^-+ ]]; do
+    if [[ $1 =~ ^-*update$ ]]; then
+        commandStr="update-stack"
+    elif [[ "$1" =~ ^-*create$ ]]; then
+        commandStr="create-stack"
+    elif [[ "$1" =~ ^-*changeset$ ]]; then
+        commandStr="create-change-set"
+    else
+        gen3_log_err "invalid command $1"
+        return 1
+    fi
+    shift
+
+    while [[ $# -gt 0 && "$1" =~ ^-+ ]]; do
         gen3_log_info "processing: $1"
-        if [[ $1 =~ ^-*update$ ]]; then
-            commandStr="update-stack"
-        elif [[ "$1" =~ ^-*create$ ]]; then
-            commandStr="create-stack"
-        elif [[ "$1" =~ ^-*dryRun ]]; then
+        if [[ "$1" =~ ^-*dryRun ]]; then
             dryRun=true
+        else
+            gen3_log_warn "ignoring unknown flag $1"
         fi
         shift
     done
@@ -73,10 +91,6 @@ apply() {
     fi
     stackPath="$1"
     shift
-    if [[ -z "$commandStr" ]]; then
-        gen3_log_err "invalid apply command, must specify --create or --update"
-        return 1
-    fi
     if ! templatePath="${LITTLE_HOME}/$(jq -r -e .Littleware.TemplatePath < "$stackPath")" || ! [[ -f "$templatePath" ]]; then
         gen3_log_err "templatePath does not exist: ${templatePath}"
         return 1
@@ -136,9 +150,15 @@ apply() {
             jq -r --arg key "${key}" --arg bucket "${bucket}" '.Parameters += [{ "ParameterKey": "LambdaBucket", "ParameterValue": $bucket }, { "ParameterKey": "LambdaKey", "ParameterValue": $key } ]' <<<"$skeleton"
             )"
     fi
-    if [[ "$commandStr" == "update-stack" ]]; then
-        if ! skeleton="$(echo "$skeleton" | jq -r -e 'del(.TimeoutInMinutes) | del(.EnableTerminationProtection)')"; then
+    if [[ "$commandStr" != "create-stack" ]]; then
+        if ! skeleton="$(jq -r -e 'del(.TimeoutInMinutes) | del(.EnableTerminationProtection)' <<< "$skeleton")"; then
             gen3_log_err "failed to process $skeleton"
+            return 1
+        fi
+    fi
+    if [[ "$commandStr" == "create-change-set" ]]; then
+        if ! skeleton="$(jq -r -e --arg name "${changeSetName}" '.ClientToken = .ClientRequestToken | .ChangeSetName = $name | .ChangeSetType = "UPDATE" | del(.ClientRequestToken)' <<< "$skeleton")"; then
+            gen3_log_err "failed to set ClientToken for $skeleton"
             return 1
         fi
     fi
@@ -158,12 +178,40 @@ EOM
 }
 
 create() {
-  apply --create "$@"
+    apply --create "$@"
 }
 
 
 update() {
-  apply --update "$@"
+    apply --update "$@"
+}
+
+makeChange() {
+    apply --changeset "$@"
+}
+
+showChange() {
+    local stackPath
+    local stackName
+    
+    if ! stackPath="$1" || [[ ! -f "$stackPath" ]] || ! stackName="$(jq -r -e .StackName < "$stackPath")"; then
+        gen3_log_err "unable to load stackName from $stackPath"
+        return 1
+    fi
+    shift
+    aws cloudformation describe-change-set --change-set-name "$(getChangeSetName)" --stack-name "$stackName"
+}
+
+executeChange() {
+    local stackPath
+    local stackName
+    
+    if ! stackPath="$1" || [[ ! -f "$stackPath" ]] || ! stackName="$(jq -r -e .StackName < "$stackPath")"; then
+        gen3_log_err "unable to load stackName from $stackPath"
+        return 1
+    fi
+    shift
+    aws cloudformation execute-change-set --change-set-name "$(getChangeSetName)" --stack-name "$stackName"
 }
 
 delete() {
@@ -232,7 +280,7 @@ EOM
 validateTemplate() {
     local templateStr
     templateStr="$(filterTemplate "$@")"
-    aws cloudformation validate-template --template-body "$(cat "$templatePath")"
+    aws cloudformation validate-template --template-body "$templateStr"
 }
 
 filterTemplate() {
@@ -280,6 +328,18 @@ shift
 case "$command" in
     "bucket")
         stackBucketName "$@"
+        ;;
+    "change-name")
+        getChangeSetName "$@"
+        ;;
+    "make-change")
+        makeChange "$@"
+        ;;
+    "show-change")
+        showChange "$@"
+        ;;
+    "exec-change")
+        executeChange "$@"
         ;;
     "create")
         create "$@"
