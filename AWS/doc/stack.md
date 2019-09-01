@@ -31,6 +31,14 @@ Create a new stack
 arun stack create path/to/stackParams.json
 ```
 
+### describe
+
+Describe an existing stack
+
+```
+arun stack describe path/to/stackParams.json
+```
+
 ### make-change
 
 Create a change set (with name `arun stack change-name`) for the specified stack
