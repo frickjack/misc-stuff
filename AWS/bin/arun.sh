@@ -14,8 +14,11 @@ _doCommand() {
     if [[ -f "$LITTLE_HOME/bin/${command}.sh" ]]; then
       shift
       bash "$LITTLE_HOME/bin/${command}.sh" "$@"
-    else
+    elif which "$1" > /dev/null 2>&1; then
       "$@"
+    else
+      gen3_log_err "unknown command: $@"
+      return 1
     fi
 }
 

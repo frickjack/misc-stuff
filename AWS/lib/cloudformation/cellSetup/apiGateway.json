@@ -1,6 +1,14 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Parameters": {
+    "CertificateArn": {
+      "Type": "String",
+      "Description": "ACM Certificate ARN"
+    },
+    "DomainName": {
+      "Type": "String",
+      "Description": "custom domain for the gateway - aligns with certificate"
+    },
     "StackName": {
       "Type": "String",
       "Description": "deployment stack - ex api.frickjack.com, reuben.dev.frickjack.com, ...",
@@ -114,7 +122,7 @@
     "apiStage": {
       "Type": "AWS::ApiGateway::Stage",
       "Properties": {
-        "DeploymentId": {"Ref": "apiDeployment"},
+        "DeploymentId": { "Ref": "apiDeploymentWithNullStage" },
         "MethodSettings": [{
           "DataTraceEnabled": true,
           "HttpMethod": "*",
@@ -122,15 +130,37 @@
           "ResourcePath": "/*"
         }],
         "RestApiId": {"Ref": "apiGateway"},
-        "StageName": "beta"
+        "StageName": "v1"
       }
     },
 
-    "apiDeployment": {
+    "apiDeploymentWithNullStage": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {"Ref": "apiGateway"},
-        "StageName": "gateway"
+        "StageName": "null"
+      }
+    },
+
+    "domainName": {
+      "Type" : "AWS::ApiGateway::DomainName",
+      "Properties" : {
+          "CertificateArn" : { "Ref": "CertificateArn" },
+          "DomainName" : { "Ref": "DomainName" },
+          "EndpointConfiguration" : { "Types": ["EDGE"] }
+        }
+    },
+
+    "domainMapping": {
+      "Type": "AWS::ApiGateway::BasePathMapping",
+      "Properties": {
+          "BasePath": "core",
+          "DomainName": {
+              "Ref": "DomainName"
+          },
+          "RestApiId": {
+              "Ref": "apiGateway"
+          }
       }
     }
   },

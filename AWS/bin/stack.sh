@@ -257,7 +257,7 @@ events() {
       echo "ERROR: unable to load name from stack skeleton: $stackPath" 1>&2
       return 1
     fi
-    aws cloudformation describe-stack-events --stack-name "$stackName"
+    aws cloudformation describe-stack-events --stack-name "$stackName" --max-items 100
 }
 
 

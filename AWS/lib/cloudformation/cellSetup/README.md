@@ -13,6 +13,11 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 
  First deployed api gets an endpoint of form: https://{api-id}.execute-api.{region}.amazonaws.com
 
+## Mapping
+
+* different gateways for different api versions
+* custom domain
+* multiple domain mappings 
 
 ## Resources
 
@@ -21,3 +26,6 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-authorizer.html
 * https://blog.jayway.com/2016/08/17/introduction-to-cloudformation-for-api-gateway/
 * https://blog.jayway.com/2016/09/18/introduction-swagger-cloudformation-api-gateway/
+* https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-integration-requestParameters.html
+* https://stackoverflow.com/questions/36096603/in-aws-api-gateway-how-do-i-include-a-stage-parameter-as-part-of-the-event-vari
+* https://stackoverflow.com/questions/36181805/how-to-get-the-name-of-the-stage-in-an-aws-lambda-function-linked-to-api-gateway

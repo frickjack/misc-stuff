@@ -434,6 +434,7 @@
                   "acm:*",
                   "acm-pca:*",
                   "apigateway:*",
+                  "cloudfront:*",
                   "codebuild:*",
                   "codedeploy:*",
                   "cloudwatch:*",
