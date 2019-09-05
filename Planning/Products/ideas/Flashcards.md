@@ -1,4 +1,10 @@
 # TL;DR
 
-TODO
+Little flash cards webapp
+
+## Use Cases
+
+* share/load decks
+* multi-dimension cards
+* audio/video
 
