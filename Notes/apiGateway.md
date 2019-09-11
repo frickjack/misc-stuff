@@ -39,7 +39,7 @@ Issues:
 * CICD - lambda layers, etc
 * monitoring
 
-Ideas:
+### Ideas:
 
 * lambda == deployment, layer == code - lambda is associated with an API (gateway) or generic handler (ex: slack message), etc
 
@@ -63,3 +63,12 @@ Monitoring:
 * concurrency alerts
 * cloudwatch logs
 * X-Ray
+
+## Multi-tenant
+
+A cell is a container for tenants
+
+## Gateway configuration
+
+* openapi
+* domain mapping and stage name: https://api.frickjack.com/core/v1/hello
