@@ -1,0 +1,35 @@
+{
+    "StackName": "little-cicd-iam-frickjack",
+    "Capabilities": [
+        "CAPABILITY_NAMED_IAM"
+    ],
+    "TimeoutInMinutes": 5,
+    "EnableTerminationProtection": true,
+    "Parameters" : [
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "devops"
+            },
+            {
+                "Key": "project",
+                "Value": "cicd"
+            },
+            {
+                "Key": "stack",
+                "Value": "main"
+            },
+            {
+                "Key": "stage",
+                "Value": "prod"
+            },
+            {
+              "Key": "role",
+              "Value": "authz"
+            }
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/cicd/cicdIam.json"
+    }
+}

@@ -17,8 +17,8 @@ Note: this command requires a `./package.json` file to exist.
 
 ### bundle
 
-Package the contents of the current directory into a `package.zip` file.
-This command will erase an existing `package.zip`.
+Package the contents of the current directory into a `bundle.zip` file.
+This command will erase an existing `bundle.zip`.
 
 ```
 $ arun lambda package
@@ -30,8 +30,8 @@ Note: this command requires a `./package.json` file to exist.
 
 * identify the working directory's git branch and package name
 * bundle the current directory (see [above](###bundle))
-* upload the `package.zip` to the
-region's cloudformation bucket with tag `lambda/dev/${packageName}/${gitBranch}/package.zip`
+* upload the `bundle.zip` to the
+region's cloudformation bucket with key `lambda/dev/${packageName}/${gitBranch}/bundle.zip`
 
 ```
 $ arun lambda upload

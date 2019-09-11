@@ -1,0 +1,103 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+      "ProjectName": {
+        "Type": "String",
+        "Description": "name of the build project",
+        "ConstraintDescription": "should usually be the domain of the github repository"
+      },
+      "LambdaBucket": {
+        "Type": "String",
+        "Description": "bucket of s3 with lambda package",
+        "ConstraintDescription": "must be a valid s3 bucket"
+      },
+      "LambdaKey": {
+        "Type": "String",
+        "Description": "key of s3 path to lambda package",
+        "ConstraintDescription": "must be a valid s3 object key"
+      },
+      "LambdaLayers": {
+        "Type": "CommaDelimitedList",
+        "Description": "Lambda layer ARN list",
+        "ConstraintDescription": "comma separated list of lambda layer arn's"
+      },
+      "LambdaRole": {
+        "Type": "String",
+        "Description": "arn of IAM role for lambda execution to assume",
+        "ConstraintDescription": "IAM role arn"
+      },
+      "GatewayRole": {
+        "Type": "String",
+        "Description": "arn of IAM role for gateway to assume",
+        "ConstraintDescription": "IAM role arn"
+      }
+    },
+    "Resources": {
+        "projectName": {
+            "Type" : "AWS::CodeBuild::Project",
+            "Properties" : {
+                "Artifacts" : [
+                  {
+                    "Type": "NO_ARTIFACTS"
+                  }
+                ],
+                "BadgeEnabled" : true,
+                "Description" : "build and test little-elements typescript project",
+                "Environment" : {
+                  "ComputeType" : "BUILD_GENERAL1_SMALL",
+                  "EnvironmentVariables" : [ 
+                    {
+                      "Name" : "LITTLE_EXAMPLE",
+                      "Type" : "PLAINTEXT",
+                      "Value" : "ignore"
+                    }
+                   ],
+                  "Image" : "aws/codebuild/standard:2.0",
+                  "Type" : "LINUX_CONTAINER"
+                },
+                "Name" : { "Ref": "RepoName" },
+                "QueuedTimeoutInMinutes" : 30,
+                "SecondaryArtifacts" : [],
+                "SecondarySources" : [],
+                "ServiceRole" : String,
+                "Source" : Source,
+                "SourceVersion" : String,
+                "Tags": [
+                    {
+                        "Key": "org",
+                        "Value": "applications"
+                    },
+                    {
+                        "Key": "project",
+                        "Value": { "Ref": "RepoName" }
+                    },
+                    {
+                        "Key": "stack",
+                        "Value": "build"
+                    },
+                    {
+                        "Key": "stage",
+                        "Value": "dev"
+                    },
+                    {
+                      "Key": "role",
+                      "Value": "codebuild"
+                    }
+                ],
+                "TimeoutInMinutes" : Integer,
+                "Triggers" : ProjectTriggers,
+                "VpcConfig" : VpcConfig
+            }
+        }
+    },
+
+    "Outputs": {
+      "RootUrl": {
+        "Description": "Root URL of the API gateway",
+        "Value": {"Fn::Join": ["",
+          ["https://", {"Ref": "apiGateway"}, ".execute-api.", {"Ref": "AWS::Region"}, ".amazonaws.com"]
+        ]}
+      }
+    }
+  }
+  
