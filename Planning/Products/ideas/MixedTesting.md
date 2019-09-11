@@ -6,3 +6,7 @@ publishing, and metrics tracking.
 ## Deliverables
 
 * Standard: API design, UX design, documentation, testing, monitoring, SLA
+
+## References
+
+* https://marcofranssen.nl/jasmine-vs-mocha/

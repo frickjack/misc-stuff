@@ -14,3 +14,6 @@ Idea - non-technical product mockup/process first (ex - markdown files in folder
 
 ### Stories
 
+## Deliverables
+
+* Standard: API design, UX design, documentation, testing, monitoring, SLO, bLog

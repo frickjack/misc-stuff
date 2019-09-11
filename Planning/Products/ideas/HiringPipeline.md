@@ -18,7 +18,7 @@ See Y-combinator Youtube talk on culture in startup school 2019.
 
 ## Deliverables
 
-* Standard: API design, UX design, documentation, testing, monitoring, SLO
+* Standard: API design, UX design, documentation, testing, monitoring, SLO, bLog
 * web site
 * api, cli, sdk?
 * automated interview: 
