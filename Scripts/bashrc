@@ -36,4 +36,10 @@ meminfo() {
 # less with escape-char support
 alias lessr='less -R'
 
+# cat file | after special
+after() {
+  local key
+  key="${1:-frickjack}"
+awk 'BEGIN { found="false"; }; (found=="false" && $0 ~ /'"$key"'/) { found="true" }; (found=="true" && $0 ~ /@/) { print $0 }'
+}
 
