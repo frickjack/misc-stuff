@@ -3,7 +3,7 @@
     "Parameters": {
       "ProjectName": {
         "Type": "String",
-        "Description": "name of the build project",
+        "Description": "name of the build project - also tag",
         "ConstraintDescription": "should usually be the domain of the github repository"
       },
       "ServiceRole": {
@@ -42,7 +42,7 @@
                   "Image" : "aws/codebuild/standard:2.0",
                   "Type" : "LINUX_CONTAINER"
                 },
-                "Name" : { "Ref": "RepoName" },
+                "Name" : { "Ref": "ProjectName" },
                 "QueuedTimeoutInMinutes" : 30,
                 "SecondaryArtifacts" : [],
                 "SecondarySources" : [],
@@ -58,11 +58,11 @@
                     },
                     {
                         "Key": "project",
-                        "Value": { "Ref": "RepoName" }
+                        "Value": { "Ref": "ProjectName" }
                     },
                     {
                         "Key": "stack",
-                        "Value": "build"
+                        "Value": "cell0"
                     },
                     {
                         "Key": "stage",

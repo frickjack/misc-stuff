@@ -8,34 +8,33 @@
     "Parameters" : [
         {
             "ParameterKey": "ProjectName",
-            "ParameterValue": "little-elements-build"
+            "ParameterValue": "cicd-little-elements"
         },
         {
             "ParameterKey": "ServiceRole",
             "ParameterValue": "arn:aws:iam::027326493842:role/littleCodeBuild"
         },
         {
-            "ParameterKey": "ServiceRole",
-            "ParameterValue": "arn:aws:iam::027326493842:role/littleCodeBuild"
+            "ParameterKey": "GithubRepo",
+            "ParameterValue": "https://github.com/frickjack/little-elements.git"
         }
-        "https://github.com/awslabs/aws-codebuild-jenkins-plugin"
     ],
     "Tags": [
             {
                 "Key": "org",
-                "Value": "devops"
+                "Value": "applications"
             },
             {
                 "Key": "project",
-                "Value": "cicd"
+                "Value": "cicd-little-elements"
             },
             {
                 "Key": "stack",
-                "Value": "little-elements"
+                "Value": "cell0"
             },
             {
                 "Key": "stage",
-                "Value": "prod"
+                "Value": "dev"
             },
             {
               "Key": "role",
