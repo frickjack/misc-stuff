@@ -202,6 +202,18 @@ showChange() {
     aws cloudformation describe-change-set --change-set-name "$(getChangeSetName)" --stack-name "$stackName"
 }
 
+rmChange() {
+    local stackPath
+    local stackName
+    
+    if ! stackPath="$1" || [[ ! -f "$stackPath" ]] || ! stackName="$(jq -r -e .StackName < "$stackPath")"; then
+        gen3_log_err "unable to load stackName from $stackPath"
+        return 1
+    fi
+    shift
+    aws cloudformation delete-change-set --change-set-name "$(getChangeSetName)" --stack-name "$stackName"
+}
+
 describeStack() {
     local stackPath
     local stackName
@@ -346,6 +358,9 @@ case "$command" in
         ;;
     "make-change")
         makeChange "$@"
+        ;;
+    "rm-change")
+        rmChange "$@"
         ;;
     "show-change")
         showChange "$@"

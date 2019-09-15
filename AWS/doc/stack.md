@@ -50,6 +50,14 @@ Create a change set (with name `arun stack change-name`) for the specified stack
 arun stack make-change path/to/stackParams.json
 ```
 
+### rm-change
+
+Remove an unapplied change, so a new change may be submitted
+
+```
+arun stack rm-change path/to/stackParams.json
+```
+
 ### show-change
 
 Show the last change set created via `make-change`
