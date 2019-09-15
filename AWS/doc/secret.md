@@ -10,7 +10,13 @@ Helpers for interacting with AWS
 Create a new secret.  The secret name should take form `$org/$project/$stack/$stage/$role` - details [here](./README.md)
 
 ```
-arun secrets org/project/stack/stage/role value description
+arun secret create org/project/stack/stage/role value description
 ```
 
 ### lookup
+
+Lookup a secret by name
+
+```
+secretInfoJson="$(arun secret lookup org/project/stack/stage/role)"
+```

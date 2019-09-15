@@ -18,7 +18,10 @@ secretCreate() {
     value="$1"
     shift
     description="$1"
-    shift
+    if [[ ! "$value" =~ ^\{.+:.+\}$ ]] || ! jq -e -r . <<<"$value" > /dev/null 2>&1; then
+        gen3_log_err "invalid secret value - must be a json object"
+        return 1
+    fi
     local nameList=(${name//\// })
     if [[ ${#nameList[@]} != 5 ]]; then
         gen3_log_err "ERROR: name should have form org/project/stack/stage/role: $name"
@@ -39,7 +42,7 @@ secretCreate() {
     "Name": "$org/$project/$stack/$stage/$role",
     "ClientRequestToken": "$reqToken",
     "Description": "$description",
-    "SecretString": "$value",
+    "SecretString": "",
     "Tags": [
         {
             "Key": "org",
@@ -65,8 +68,8 @@ secretCreate() {
 }
 EOM
         )"
+    skeleton="$(jq --arg value "$value" '.SecretString=$value' <<<"$skeleton")"
     aws secretsmanager create-secret --cli-input-json "$skeleton"
-    return 0
 }
 
 secretLookup() {
@@ -98,6 +101,7 @@ case "$command" in
         secretLookup "$@"
         ;;
     *)
+        gen3_log_err "unknown command: $command"
         arun help secret
         ;;
 esac
