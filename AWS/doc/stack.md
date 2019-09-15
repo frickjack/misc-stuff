@@ -1,6 +1,9 @@
 # TL;DR
 
 Helpers for interacting with `cloudformation`.
+
+## Overview
+
 Most commands take form:
 ```
 arun stack command-name path/to/stackParams.json
@@ -13,7 +16,7 @@ If the template folder has an `openapi.yaml` file, then the stack helpers inline
 If the stack folder has a `code/` subfolder, then the stack helpers zip up the code, upload the zip file to the cloudformation bucket, and insert `LambdaBucket` and `LambdaKey` into the stack parameters before sending them onto the underlying cloudformation commands, so a template may specify those parameters as inputs when defining lambda resources.
 
 
-## Commands
+## Use
 
 ### bucket
 

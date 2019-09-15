@@ -2,7 +2,7 @@
 
 gitops aware heper for interacting with AWS lambda
 
-## Commands
+## Use
 
 ### drun
 

@@ -3,7 +3,7 @@
 Run through the testsuite
 
 
-## Examples
+## Overview
 
 * Run the entire test suite
 ```

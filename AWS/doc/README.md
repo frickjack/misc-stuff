@@ -32,3 +32,26 @@ arun profiles
 * [accountBootstrap](./accountBootstrap.md)
 
 Setup an AWS account to run `cloudformation`.
+
+
+* [lambda](./lambda.md)
+
+lambda management helpers
+
+* [stacks](./stacks.md)
+
+cloudformation helpers
+
+* [secret](./secret.md)
+
+secretsmanager helpers
+
+## Tagging
+
+Littleware uses the following resource tags:
+
+* org: which billing organization owns this resource
+* project: which project or application
+* stack: a project or application may have multiple deployments - for different clients, tenant cells, or whatever
+* stage: a particular application stack may have multiple deployments for different stages of the development process (qa, staging, production)
+* role: what is the purpose of the resource?

@@ -31,5 +31,6 @@ done
 source "$LITTLE_HOME/test/utilsTest.sh"
 source "$LITTLE_HOME/test/arunTest.sh"
 source "$LITTLE_HOME/test/lambdaTest.sh"
+source "$LITTLE_HOME/test/secretTest.sh"
 source "$LITTLE_HOME/test/stackTest.sh"
 shunit_summary
