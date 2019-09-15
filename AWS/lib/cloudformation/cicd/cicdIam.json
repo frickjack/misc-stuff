@@ -111,6 +111,14 @@
             }
           }
         ]}
+      },
+      "GithubCreds": {
+        "Type" : "AWS::CodeBuild::SourceCredential",
+        "Properties" : {
+            "AuthType" : "PERSONAL_ACCESS_TOKEN",
+            "ServerType" : "GITHUB",
+            "Token": "{{resolve:secretsmanager:github:SecretString:token}}"
+          }
       }
     },
 

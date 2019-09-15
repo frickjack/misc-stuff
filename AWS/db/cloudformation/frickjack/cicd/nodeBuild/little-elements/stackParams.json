@@ -1,0 +1,48 @@
+{
+    "StackName": "little-cicd-iam-frickjack",
+    "Capabilities": [
+        "CAPABILITY_NAMED_IAM"
+    ],
+    "TimeoutInMinutes": 5,
+    "EnableTerminationProtection": true,
+    "Parameters" : [
+        {
+            "ParameterKey": "ProjectName",
+            "ParameterValue": "little-elements-build"
+        },
+        {
+            "ParameterKey": "ServiceRole",
+            "ParameterValue": "arn:aws:iam::027326493842:role/littleCodeBuild"
+        },
+        {
+            "ParameterKey": "ServiceRole",
+            "ParameterValue": "arn:aws:iam::027326493842:role/littleCodeBuild"
+        }
+        "https://github.com/awslabs/aws-codebuild-jenkins-plugin"
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "devops"
+            },
+            {
+                "Key": "project",
+                "Value": "cicd"
+            },
+            {
+                "Key": "stack",
+                "Value": "little-elements"
+            },
+            {
+                "Key": "stage",
+                "Value": "prod"
+            },
+            {
+              "Key": "role",
+              "Value": "build"
+            }
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/cicd/nodeBuild.json"
+    }
+}

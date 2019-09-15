@@ -6,34 +6,21 @@
         "Description": "name of the build project",
         "ConstraintDescription": "should usually be the domain of the github repository"
       },
-      "LambdaBucket": {
+      "ServiceRole": {
         "Type": "String",
-        "Description": "bucket of s3 with lambda package",
-        "ConstraintDescription": "must be a valid s3 bucket"
+        "Description": "arn of IAM role for codebuild to assume",
+        "ConstraintDescription": "IAM role arn",
+        "AllowedPattern": "arn:.+"
       },
-      "LambdaKey": {
+      "GithubRepo": {
         "Type": "String",
-        "Description": "key of s3 path to lambda package",
-        "ConstraintDescription": "must be a valid s3 object key"
-      },
-      "LambdaLayers": {
-        "Type": "CommaDelimitedList",
-        "Description": "Lambda layer ARN list",
-        "ConstraintDescription": "comma separated list of lambda layer arn's"
-      },
-      "LambdaRole": {
-        "Type": "String",
-        "Description": "arn of IAM role for lambda execution to assume",
-        "ConstraintDescription": "IAM role arn"
-      },
-      "GatewayRole": {
-        "Type": "String",
-        "Description": "arn of IAM role for gateway to assume",
-        "ConstraintDescription": "IAM role arn"
+        "Description": "url of github source repo",
+        "ConstraintDescription": "https://github.com/ repo url",
+        "AllowedPattern": "https://github.com/.+"
       }
     },
     "Resources": {
-        "projectName": {
+        "CodeBuild": {
             "Type" : "AWS::CodeBuild::Project",
             "Properties" : {
                 "Artifacts" : [
@@ -59,9 +46,11 @@
                 "QueuedTimeoutInMinutes" : 30,
                 "SecondaryArtifacts" : [],
                 "SecondarySources" : [],
-                "ServiceRole" : String,
-                "Source" : Source,
-                "SourceVersion" : String,
+                "ServiceRole" : { "Ref": "ServiceRole" },
+                "Source" : {
+                  "type": "GITHUB",
+                  "location": { "Ref" : "GithubRepo" }
+                },
                 "Tags": [
                     {
                         "Key": "org",
@@ -84,9 +73,17 @@
                       "Value": "codebuild"
                     }
                 ],
-                "TimeoutInMinutes" : Integer,
-                "Triggers" : ProjectTriggers,
-                "VpcConfig" : VpcConfig
+                "TimeoutInMinutes" : 10,
+                "Triggers" : {
+                  "FilterGroups" : [ 
+                    {
+                      "ExcludeMatchedPattern" : false,
+                      "Pattern" :  "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED, PUSH",
+                      "Type" : "EVENT"
+                    }
+                   ],
+                  "Webhook" : true
+                }
             }
         }
     },
