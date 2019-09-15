@@ -205,6 +205,13 @@ everyone to easily determine the general purpose of a resource and who is respon
     }
 ```
 
+* org: which billing organization owns this resource
+* project: which project or application
+* stack: a project or application may have multiple deployments - for different clients or whatever
+* stage: a particular application stack may have multiple deployments for different stages of the development process (qa, staging, production)
+* role: what is the purpose of the resource?
+
+
 ### Logs, Metrics, Monitoring, and Alerts
 
 I was slow to understand what's up with `cloudwatch` and `sns`, but
