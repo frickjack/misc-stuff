@@ -5,7 +5,11 @@ Templates for CICD stacks (codebuild, pipeline, ...)
 
 ## Overview
 
-* setup github access token (see https://docs.aws.amazon.com/codebuild/latest/userguide/sample-access-tokens.html).  Save the token in AWS secrets manager.
+* setup github access token (see https://docs.aws.amazon.com/codebuild/latest/userguide/sample-access-tokens.html).  Save the token in AWS secrets manager as a secret string with form:
+
+```
+{ "token": "the-token-value" }
+```
 
 ## Resources
 

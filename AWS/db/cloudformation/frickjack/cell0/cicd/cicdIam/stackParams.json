@@ -6,6 +6,10 @@
     "TimeoutInMinutes": 5,
     "EnableTerminationProtection": true,
     "Parameters" : [
+        {
+            "ParameterKey": "GithubToken",
+            "ParameterValue": "arn:aws:secretsmanager:us-east-2:027326493842:secret:applications/cicd/cell0/dev/github-token-zsuQPl"
+        }
     ],
     "Tags": [
             {
