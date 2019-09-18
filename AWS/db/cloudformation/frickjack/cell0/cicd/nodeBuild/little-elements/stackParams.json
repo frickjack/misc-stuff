@@ -1,5 +1,5 @@
 {
-    "StackName": "little-cicd-iam-frickjack",
+    "StackName": "nodebuild-little-elements",
     "Capabilities": [
         "CAPABILITY_NAMED_IAM"
     ],

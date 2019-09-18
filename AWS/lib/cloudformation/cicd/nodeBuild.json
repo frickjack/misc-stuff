@@ -23,11 +23,9 @@
         "CodeBuild": {
             "Type" : "AWS::CodeBuild::Project",
             "Properties" : {
-                "Artifacts" : [
-                  {
-                    "Type": "NO_ARTIFACTS"
-                  }
-                ],
+                "Artifacts" : {
+                  "Type": "NO_ARTIFACTS"
+                },
                 "BadgeEnabled" : true,
                 "Description" : "build and test little-elements typescript project",
                 "Environment" : {
@@ -48,8 +46,9 @@
                 "SecondarySources" : [],
                 "ServiceRole" : { "Ref": "ServiceRole" },
                 "Source" : {
-                  "type": "GITHUB",
-                  "location": { "Ref" : "GithubRepo" }
+                  "Type": "GITHUB",
+                  "Location": { "Ref" : "GithubRepo" },
+                  "ReportBuildStatus": true
                 },
                 "Tags": [
                     {
@@ -76,11 +75,13 @@
                 "TimeoutInMinutes" : 10,
                 "Triggers" : {
                   "FilterGroups" : [ 
-                    {
-                      "ExcludeMatchedPattern" : false,
-                      "Pattern" :  "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED, PUSH",
-                      "Type" : "EVENT"
-                    }
+                    [
+                      {
+                        "ExcludeMatchedPattern" : false,
+                        "Pattern" : "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED, PUSH",
+                        "Type" : "EVENT"
+                      }  
+                    ]
                    ],
                   "Webhook" : true
                 }
@@ -89,12 +90,6 @@
     },
 
     "Outputs": {
-      "RootUrl": {
-        "Description": "Root URL of the API gateway",
-        "Value": {"Fn::Join": ["",
-          ["https://", {"Ref": "apiGateway"}, ".execute-api.", {"Ref": "AWS::Region"}, ".amazonaws.com"]
-        ]}
-      }
     }
   }
   
