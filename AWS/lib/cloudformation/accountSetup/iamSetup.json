@@ -47,6 +47,9 @@
                 "Action": [ "sts:AssumeRole" ]
             } ]
           },
+          "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
+          ],
           "MaxSessionDuration" : 3600,
           "Path" : "/littleware/account/user/",
           "RoleName" : "littleDeveloper"
