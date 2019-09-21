@@ -99,7 +99,7 @@ lambdaBundle() {
     if [[ -f ./bundle.zip ]]; then
       /bin/rm ./bundle.zip
     fi
-    zip -r bundle.zip * 1>&2 && echo "$(pwd)/bundle.zip"
+    zip -r bundle.zip . 1>&2 && echo "$(pwd)/bundle.zip"
 }
 
 
