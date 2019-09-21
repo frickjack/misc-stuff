@@ -49,21 +49,23 @@
                   ]
                 },
                 {
-                  "Sid": "S3GetObjectPolicy",
+                  "Sid": "S3ObjectPolicy",
                   "Effect": "Allow",
                   "Action": [
                     "s3:GetObject",
-                    "s3:GetObjectVersion"
+                    "s3:GetObjectVersion",
+                    "s3:PutObject"
                   ],
                   "Resource": [
                     "*"
                   ]
                 },
                 {
-                  "Sid": "S3PutObjectPolicy",
+                  "Sid": "SsmPolicy",
                   "Effect": "Allow",
                   "Action": [
-                    "s3:PutObject"
+                    "ssm:GetParameters",
+                    "secretsmanager:Get*"
                   ],
                   "Resource": [
                     "*"
