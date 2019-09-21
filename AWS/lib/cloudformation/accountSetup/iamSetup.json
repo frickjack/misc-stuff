@@ -327,7 +327,12 @@
               {
                 "Sid": "ManageSecrets",
                 "Action": [
-                  "secretsmanager:*",
+                  "secretsmanager:Describe*",
+                  "secretsmanager:Get*",
+                  "secretsmanager:List*",
+                  "ssm:Describe*",
+                  "ssm:Get*",
+                  "ssm:List*",
                   "sns:List*",
                   "sns:Publish"
                 ],
@@ -453,6 +458,7 @@
                   "resource-groups:*",
                   "route53:*",
                   "secretsmanager:*",
+                  "ssm:*",
                   "sns:*",
                   "s3:*",
                   "tag:*"   
