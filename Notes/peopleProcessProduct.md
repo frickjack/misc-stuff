@@ -1,6 +1,6 @@
 # TL;DR
 
-Processes and tools for operating a productive engineering organization
+An organization is a bucket of people, processes, and products, and must empower its people with processes and tools to produce great products.
 
 ## Overview
 
