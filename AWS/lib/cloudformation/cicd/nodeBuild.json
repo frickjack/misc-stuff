@@ -43,13 +43,21 @@
                 "Name" : { "Ref": "ProjectName" },
                 "QueuedTimeoutInMinutes" : 30,
                 "SecondaryArtifacts" : [],
-                "SecondarySources" : [],
                 "ServiceRole" : { "Ref": "ServiceRole" },
                 "Source" : {
                   "Type": "GITHUB",
                   "Location": { "Ref" : "GithubRepo" },
+                  "GitCloneDepth": 2,
                   "ReportBuildStatus": true
                 },
+                "SecondarySources": [
+                  {
+                    "Type": "GITHUB",
+                    "Location": "https://github.com/frickjack/misc-stuff.git",
+                    "GitCloneDepth": 1,
+                    "SourceIdentifier": "HELPERS"
+                  }
+                ],
                 "Tags": [
                     {
                         "Key": "org",

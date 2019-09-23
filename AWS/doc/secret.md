@@ -31,4 +31,3 @@ aws ssm get-parameter --name /aws/reference/secretsmanager/applications/cicd/cel
 ```
 
 See https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html
-
