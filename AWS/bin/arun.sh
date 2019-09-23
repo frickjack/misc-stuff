@@ -34,10 +34,14 @@ arun() {
     if [[ $# -lt 1 || "$1" =~ ^-*help$ ]]; then
       shift
       bash "$LITTLE_HOME/bin/help.sh" "$@"
-      return 1
+      return 0
     fi
     if [[ "$1" == "profiles" ]]; then
       cat ~/.aws/config | grep '\[' | sed -E 's/\[(profile )?//g' | sed 's/]//g'
+      return 0
+    fi
+    if [[ $# -gt 1 && "$2" =~ ^-*help$ ]]; then
+      bash "$LITTLE_HOME/bin/help.sh" "$@"
       return 0
     fi
 

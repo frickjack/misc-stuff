@@ -49,12 +49,14 @@
                   ]
                 },
                 {
-                  "Sid": "S3ObjectPolicy",
+                  "Sid": "S3Policy",
                   "Effect": "Allow",
                   "Action": [
                     "s3:GetObject",
                     "s3:GetObjectVersion",
-                    "s3:PutObject"
+                    "s3:PutObject",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation"
                   ],
                   "Resource": [
                     "*"
@@ -94,22 +96,14 @@
                   ]
                 },
                 {
-                  "Sid": "S3BucketIdentity",
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:GetBucketAcl",
-                    "s3:GetBucketLocation"
-                  ],
-                  "Resource": 
-                    "*"
-                },
-                {
                   "Sid": "LambdaLayerPolicy",
                   "Effect": "Allow",
                   "Action": [
                     "lambda:PublishLayerVersion",
-                    "lambda:GetLayerVersion",
-                    "lambda:DeleteLayerVersion"
+                    "lambda:Get*",
+                    "lambda:List*",
+                    "lambda:DeleteLayerVersion",
+                    "iam:List*"
                   ],
                   "Resource": [
                     "*"
