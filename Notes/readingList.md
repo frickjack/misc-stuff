@@ -10,6 +10,7 @@ Reading
 ## Design
 
 * Atomic Design
+* BEM
 
 ## DevSecOps
 
@@ -21,3 +22,4 @@ Reading
 * High Output Management
 * Steve Jobs video
 * Simon Sinek video
+* Good PM, Bad PM
