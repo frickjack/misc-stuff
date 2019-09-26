@@ -74,22 +74,24 @@
                   ]
                 },
                 {
-                  "Sid": "ECRPullPolicy",
+                  "Sid": "ECRPolicy",
                   "Effect": "Allow",
                   "Action": [
                     "ecr:BatchCheckLayerAvailability",
                     "ecr:GetDownloadUrlForLayer",
-                    "ecr:BatchGetImage"
+                    "ecr:BatchGetImage",
+                    "ecr:GetAuthorizationToken"
+
                   ],
                   "Resource": [
                     "*"
                   ]
                 },
                 {
-                  "Sid": "ECRAuthPolicy",
+                  "Sid": "CFPolicy",
                   "Effect": "Allow",
                   "Action": [
-                    "ecr:GetAuthorizationToken"
+                    "cloudformation:ValidateTemplate"
                   ],
                   "Resource": [
                     "*"
