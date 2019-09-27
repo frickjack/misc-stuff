@@ -99,7 +99,10 @@ lambdaBundle() {
     if [[ -f ./bundle.zip ]]; then
       /bin/rm ./bundle.zip
     fi
-    (zip -r bundle.zip . | grep -v node_modules | head -50; exit ${PIPESTATUS[0]}) 1>&2 && echo "$(pwd)/bundle.zip"
+    zip -r bundle.zip . > /dev/null 2>&1 && echo "$(pwd)/bundle.zip"
+    local result=$?
+    (zipinfo bundle.zip | grep -v node_modules | grep -v .git | head -100) 1>&2
+    return $result
 }
 
 
