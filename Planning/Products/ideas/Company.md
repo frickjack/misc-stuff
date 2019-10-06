@@ -6,6 +6,7 @@ Setup company
 
 * Transparent pay
 * 3 day work week?  3+1 at home? 2+2?  1 meeting day?  remote work?  video?  blogs?  slack?
+* B-corporation
 
 ## Deliverables
 
