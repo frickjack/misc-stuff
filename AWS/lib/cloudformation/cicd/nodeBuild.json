@@ -17,8 +17,16 @@
         "Description": "url of github source repo",
         "ConstraintDescription": "https://github.com/ repo url",
         "AllowedPattern": "https://github.com/.+"
+      },
+      "SupportRepo": {
+        "Type": "String",
+        "Description": "url of github secondary repo - default https://github.com/frickjack/misc-stuff.git",
+        "Default": "https://github.com/frickjack/misc-stuff.git",
+        "ConstraintDescription": "https://github.com/ repo url",
+        "AllowedPattern": "https://github.com/.+"
       }
     },
+    
     "Resources": {
         "CodeBuild": {
             "Type" : "AWS::CodeBuild::Project",
@@ -53,7 +61,7 @@
                 "SecondarySources": [
                   {
                     "Type": "GITHUB",
-                    "Location": "https://github.com/frickjack/misc-stuff.git",
+                    "Location": { "Ref" : "SupportRepo" },
                     "GitCloneDepth": 1,
                     "SourceIdentifier": "HELPERS"
                   }
@@ -86,9 +94,21 @@
                     [
                       {
                         "ExcludeMatchedPattern" : false,
-                        "Pattern" : "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED, PUSH",
+                        "Pattern" : "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED",
                         "Type" : "EVENT"
-                      }  
+                      }
+                    ],
+                    [
+                        {
+                          "ExcludeMatchedPattern" : false,
+                          "Pattern" : "PUSH",
+                          "Type" : "EVENT"
+                        },
+                        {
+                          "ExcludeMatchedPattern" : false,
+                          "Pattern" : "^refs/tags/.*",
+                          "Type" : "HEAD_REF"
+                        }
                     ]
                    ],
                   "Webhook" : true
