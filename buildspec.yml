@@ -18,3 +18,4 @@ phases:
   build:
     commands:
       - bash AWS/bin/arun.sh testsuite
+      - npm audit --audit-level=high
