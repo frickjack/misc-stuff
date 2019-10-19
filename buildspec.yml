@@ -15,6 +15,9 @@ phases:
       - echo "//registry.npmjs.org/:_authToken=$(echo "$NPM_TOKEN" | jq -e -r .token)" > "$HOME/.npmrc"
       - mkdir -p "$HOME/.aws"; /bin/echo -e "[default]\nregion = us-east-2\noutput = json\ncredential_source = Ec2InstanceMetadata\n" | tee "$HOME/.aws/config"
       - npm ci
+      - git config --global user.email frickjack
+      - git config --global user.name frickjack
+      - pip install yq --upgrade
   build:
     commands:
       - bash AWS/bin/arun.sh testsuite
