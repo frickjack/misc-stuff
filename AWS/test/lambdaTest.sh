@@ -86,7 +86,8 @@ testLambdaUpload() {
         because $? "arun lambda upload should succeed: $path"
     [[ "$path" =~ ^s3://.+/@littleware/bogus/_littleware_bogus-1_0_0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
         because $? "arun lambda upload uploads a bundle.zip: $path"
-    aws s3 ls "$path" > /dev/null 2>&1; because $? "arun lambda upload creats an s3 object at $path"
+    local clean="${path##s3://}"
+    aws s3api head-object --bucket "${clean%%/*}" --key "${clean#*/}" 1>&2; because $? "arun lambda upload creates an s3 object at $path"
 }
 
 testLambdaUpdate() {

@@ -3,6 +3,10 @@
 # Setup and delete secret
 #
 testSecretCreate() {
+    if [[ -n "$CODEBUILD_SRC_DIR" ]]; then
+      gen3_log_info "skipping testSecretCreate in CODEBUILD environment"
+      return 0
+    fi
     local secretName="applications/tools/cell0/test/test-secret"
     local secretId
     if secretInfo="$(arun secret lookup $secretName)"; then
