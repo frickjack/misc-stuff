@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LITTLE_SETUP_DIR=$(dirname "${BASH_SOURCE:-$0}")  # $0 supports zsh
-export LITTLE_HOME="${LITTLE_HOME:-"${LITTLE_SETUP_DIR}"}"
+export LITTLE_HOME="${LITTLE_HOME:-"$(cd "${LITTLE_SETUP_DIR}" && pwd)"}"
 source "${LITTLE_HOME}/lib/bash/utils.sh"
 
 
