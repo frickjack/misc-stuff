@@ -75,10 +75,10 @@ These instructions assume your command shell has access to the following tools: 
 ```
 git clone https://github.com/frickjack/misc-stuff.git
 ```
-* add the `arun` tool to your command path
+* add the `little` tool to your command path
 ```
 # assuming you're running a bash shell or similar
-alias arun="bash $(pwd)/misc-stuff/AWS/bin/arun.sh"
+alias little="bash $(pwd)/misc-stuff/AWS/bin/little.sh"
 export LITTLE_HOME="$(pwd)/misc-stuff/AWS"
 ```
 
@@ -90,7 +90,7 @@ export LITTLE_HOME="$(pwd)/misc-stuff/AWS"
 ex:
 ```
 export AWS_PROFILE="bootstrap-ohio"
-arun accountBootstrap
+little accountBootstrap
 ```
 
 * finally - prepare the inputs to our cloudformation stacks.
@@ -237,22 +237,22 @@ Ok - let's do this thing.  As the `bootstrap` user:
 * setup IAM groups and roles
 
 ```
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 Check if the stack came up successfully:
 ```
-arun stack events "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack events "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 If not, then you can delete the stack, fix whatever the problem is, and try again:
 ```
-arun stack delete "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack delete "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 Similarly, you can modify a successfully deployed stack later:
 ```
-arun stack update "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack update "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 * setup a real user for yourself
@@ -276,7 +276,7 @@ With these credentials in place, you can run commands like the following.  These
 ```
 export AWS_PROFILE=admin-ohio
 aws s3 ls
-arun env | grep AWS_
+little env | grep AWS_
 ```
 
 You can now deploy the following stacks as the new administrator user, and delete the bootstrap user.
@@ -286,7 +286,7 @@ You can now deploy the following stacks as the new administrator user, and delet
 Update the cloudtrail parameters ([AWS/db/cloudformation/YourAccount/accountSetup/cloudTrail.json](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/db/cloudformaton/frickjack/accountSetup/cloudTrail.json#L10)) with a bucket name unique to your account - something like `cloudtrail-management-$YourAccountName`.  You can retrieve the name of your account with `aws iam list-account-aliases`.
 
 ```
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/cloudTrail.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/cloudTrail.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/cloudTrail.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/cloudTrail.json"
 ```
 
 * setup an SNS topic
@@ -294,7 +294,7 @@ arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/cloudTrail.json"
 Remember to set the notification e-mail in the parameters before deploying the SNS stack; or customize the template with a subscriber for whatever notification channel (Slack, SMS, ...) you prefer.  You can always add more subscribers to the topic later.
 
 ```
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/snsNotify.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/snsNotify.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/snsNotify.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/snsNotify.json"
 ```
 
 * setup alarms
@@ -303,13 +303,13 @@ Update the stack parameter files for the alaram stacks (`AWS/db/YourAccount/acco
 (`aws sns list-topics`) before deploying the following stacks:
 
 ```
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/guardDuty.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/guardDuty.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/guardDuty.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/guardDuty.json"
 
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/budgetAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/budgetAlarm.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/budgetAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/budgetAlarm.json"
 
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/rootAccountAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/rootAccountAlarm.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/rootAccountAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/rootAccountAlarm.json"
 
-arun stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamAlarm.json"
+little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamAlarm.json"
 ```
 
 ## Summary

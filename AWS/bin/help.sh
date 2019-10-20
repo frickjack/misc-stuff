@@ -13,7 +13,7 @@ if [[ -z "$detail" ]]; then
   exit $?
 fi
 
-# Try to find an exact match
+# Try to find an exact match for the given command
 filePath="$(find "$LITTLE_HOME/doc" -name "${detail}.md" -print | head -1)"
 if [[ -n "$filePath" ]]; then
   open "$filePath"

@@ -27,7 +27,7 @@ test_colors() {
 }
 
 test_env() {
-  [[ ! -z $LITTLE_HOME ]]; because $? "arun.sh defines the LITTLE_HOME environment variable"
+  [[ ! -z $LITTLE_HOME ]]; because $? "little.sh defines the LITTLE_HOME environment variable"
 }
 
 test_logging() {

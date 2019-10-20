@@ -38,8 +38,8 @@ if [[ $(uname -s) == "Linux" ]]; then
 fi
 
 
-arun() {
-  bash "$LITTLE_HOME/bin/arun.sh" "$@"
+little() {
+  bash "$LITTLE_HOME/bin/little.sh" "$@"
 }
 
 #

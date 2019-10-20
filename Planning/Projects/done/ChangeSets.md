@@ -1,11 +1,11 @@
 # TL;DR
 
-Modify `arun stacks` to create change sets
+Modify `little stacks` to create change sets
 
 ## Acceptance Tests
 
-* by default `arun stacks create|update` deletes existing change sets, creates a new change set, and prompts to execute or delete that change set
-* `arun stacks create|update --execute` executes then deletes the change set without prompting
+* by default `little stacks create|update` deletes existing change sets, creates a new change set, and prompts to execute or delete that change set
+* `little stacks create|update --execute` executes then deletes the change set without prompting
 
 ## SLO and SLI
 
@@ -25,9 +25,9 @@ NA
 
 ## API design
 
-Modify the behavior of existing `arun` CLI options:
-* `arun stack create [--execute]`
-* `arun stack update [--execute]`
+Modify the behavior of existing `little` CLI options:
+* `little stack create [--execute]`
+* `little stack update [--execute]`
 
 ## Overall effort estimate
 

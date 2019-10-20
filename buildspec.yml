@@ -20,5 +20,5 @@ phases:
       - pip install yq --upgrade
   build:
     commands:
-      - bash AWS/bin/arun.sh testsuite
+      - bash AWS/bin/little.sh testsuite
       - npm audit --audit-level=high

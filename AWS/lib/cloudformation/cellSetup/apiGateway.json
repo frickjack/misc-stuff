@@ -115,7 +115,7 @@
           "MinimumCompressionSize" : 128,
           "Name" : { "Fn::Join": [ "-", ["api_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }]] },
           "Body": {
-            "info": "arun stack commands insert openapi.yaml here"
+            "info": "little stack commands insert openapi.yaml here"
           }
         }
     },

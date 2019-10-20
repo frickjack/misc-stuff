@@ -33,7 +33,7 @@ rotateMyKey() {
   extraKeys="$(echo "$keyData" | jq -r  --arg activeKey "$activeKey" '.AccessKeyMetadata | map(select(.AccessKeyId!=$activeKey))|map(.AccessKeyId)|.[]' | head -1)"
   if [[ -n "$extraKeys" ]]; then
     gen3_log_err "user already has multiple keys - delete one you're not using - ex:"
-    gen3_log_err "    arun aws iam delete-access-key --access-key-id '$extraKeys'"
+    gen3_log_err "    little aws iam delete-access-key --access-key-id '$extraKeys'"
     return 1
   fi
   local newKeyData

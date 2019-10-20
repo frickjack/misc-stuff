@@ -5,7 +5,7 @@ export LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
 source "${LITTLE_HOME}/lib/bash/utils.sh"
 
 #
-# arun helper - assumes AWS environment has
+# little helper - assumes AWS environment has
 # been initialized as necessary
 #
 _doCommand() {
@@ -30,7 +30,7 @@ _doCommand() {
 #            and mfa serial number
 # @param args ... rest of the command to run
 #
-arun() {
+little() {
     if [[ $# -lt 1 || "$1" =~ ^-*help$ ]]; then
       shift
       bash "$LITTLE_HOME/bin/help.sh" "$@"
@@ -41,8 +41,7 @@ arun() {
       return 0
     fi
     if [[ $# -gt 1 && "$2" =~ ^-*help$ ]]; then
-      bash "$LITTLE_HOME/bin/help.sh" "$@"
-      return 0
+      return _doCommand help "$@"
     fi
 
     local profile
@@ -134,4 +133,4 @@ arun() {
     return $?
 }
 
-arun "$@"
+little "$@"
