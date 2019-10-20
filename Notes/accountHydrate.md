@@ -78,7 +78,7 @@ git clone https://github.com/frickjack/misc-stuff.git
 * add the `little` tool to your command path
 ```
 # assuming you're running a bash shell or similar
-alias little="bash $(pwd)/misc-stuff/AWS/bin/little.sh"
+alias little="bash $(pwd)/misc-stuff/AWS/little.sh"
 export LITTLE_HOME="$(pwd)/misc-stuff/AWS"
 ```
 

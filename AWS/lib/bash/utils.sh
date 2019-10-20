@@ -39,7 +39,7 @@ fi
 
 
 little() {
-  bash "$LITTLE_HOME/bin/little.sh" "$@"
+  bash "$LITTLE_HOME/little.sh" "$@"
 }
 
 #
