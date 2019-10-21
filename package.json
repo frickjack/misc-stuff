@@ -16,7 +16,8 @@
     "url": "https://github.com/frickjack/misc-stuff/issues"
   },
   "homepage": "https://github.com/frickjack/misc-stuff#readme",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "marked": "latest"
   }
 }
