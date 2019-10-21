@@ -133,7 +133,7 @@ lambdaUpload() {
     (
         cd "$zipPath" && \
             layerName="$(lambdaLayerName)" && \
-            bucket="$(arun stack bucket)" && \
+            bucket="$(little stack bucket)" && \
             packName="$(lambdaPackageName)" && \
             bundle="$(lambdaBundle)" && \
             s3Folder="s3://${bucket}/lambda/${packName}/${layerName}" && \
@@ -171,7 +171,7 @@ lambdaUpdateLayer() {
       shift
     fi
     
-    if ! bucket="$(arun stack bucket)"; then
+    if ! bucket="$(little stack bucket)"; then
         gen3_log_err "failed to determine lambda bucket"
         return 1
     fi

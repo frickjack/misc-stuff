@@ -4,7 +4,7 @@ Rotate the access keys associated with the `default` profile.
 
 ex:
 ```
-AWS_PROFILE=default arun rotateMyKey
+AWS_PROFILE=default little rotateMyKey
 ```
 
 ## Overview

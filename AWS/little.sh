@@ -1,25 +1,81 @@
 #!/bin/bash
 
 LITTLE_SETUP_DIR=$(dirname "${BASH_SOURCE:-$0}")  # $0 supports zsh
-export LITTLE_HOME="${LITTLE_HOME:-$(cd "${LITTLE_SETUP_DIR}/.." && pwd)}"
+export LITTLE_HOME="${LITTLE_HOME:-"$(cd "${LITTLE_SETUP_DIR}" && pwd)"}"
 source "${LITTLE_HOME}/lib/bash/utils.sh"
 
+
 #
-# arun helper - assumes AWS environment has
+# determine what "type" a command is
+#
+# @param command little or platform command
+# @return echo commandType binSuffix where
+#     commandType is one of:
+#        "little-aws" for aws commands that require AWS credentials, 
+#        "little-basic" commands that do not require aws creds,
+#        "not-little" for platform applications,
+#        "bad-command" if it looks like a typo
+#     and binSuffix is one of sh py js xx
+#
+littleCommandType() {
+    local command
+    local suffixList
+    local suffix
+    command="$1"
+    suffixList=(sh js py)
+    for suffix in "${suffixList[@]}"; do
+      if [[ -f "$LITTLE_HOME/bin/${command}.${suffix}" ]]; then
+        echo "little-aws" "$suffix"
+        return 0
+      elif [[ -f "$LITTLE_HOME/bin/basic/${command}.${suffix}" ]]; then
+        echo "little-basic" "$suffix"
+        return 0
+      fi
+    done
+    if which "$command" > /dev/null 2>&1; then
+      echo "not-little" "xx"
+      return 0
+    fi
+    echo "bad-command" "xx"
+    return 0
+}
+
+#
+# little helper - assumes AWS environment has
 # been initialized as necessary
 #
-_doCommand() {
-    local command
-    command="$1"  
-    if [[ -f "$LITTLE_HOME/bin/${command}.sh" ]]; then
-      shift
-      bash "$LITTLE_HOME/bin/${command}.sh" "$@"
-    elif which "$1" > /dev/null 2>&1; then
+littleDoCommand() {
+    local command="$1"
+    local commandType=($(littleCommandType "$@"))
+    
+    if [[ "$commandType" == "not-little" ]]; then
       "$@"
-    else
+      return $?
+    elif [[ "$commandType" == "bad-command" ]]; then
       gen3_log_err "unknown command: $@"
       return 1
     fi
+    shift
+    local tool
+    local suffix="${commandType[1]}"
+    local commandPath
+    case "$suffix" in
+      py)
+        tool=python
+        ;;
+      js)
+        tool=nodejs
+        ;;
+      *)
+        tool=bash
+        ;;
+    esac
+    if [[ "$commandType" == "little-aws" ]]; then
+      commandPath="$LITTLE_HOME/bin/${command}.${suffix}"
+    else
+      commandPath="$LITTLE_HOME/bin/basic/${command}.${suffix}"
+    fi
+    "$tool" "$commandPath" "$@"
 }
 
 #
@@ -30,21 +86,28 @@ _doCommand() {
 #            and mfa serial number
 # @param args ... rest of the command to run
 #
-arun() {
+littleRun() {
     if [[ $# -lt 1 || "$1" =~ ^-*help$ ]]; then
       shift
-      bash "$LITTLE_HOME/bin/help.sh" "$@"
-      return 0
+      littleDoCommand help "$@"
+      return $?
     fi
-    if [[ "$1" == "profiles" ]]; then
-      cat ~/.aws/config | grep '\[' | sed -E 's/\[(profile )?//g' | sed 's/]//g'
-      return 0
-    fi
-    if [[ $# -gt 1 && "$2" =~ ^-*help$ ]]; then
-      bash "$LITTLE_HOME/bin/help.sh" "$@"
-      return 0
-    fi
+    local commandType=($(littleCommandType "$@"))
 
+    if [[ "$commandType" == "bad-command" ]]; then
+      gen3_log_err "unknown command: $@"
+      return 1
+    fi
+    if [[ $# -gt 1 && "$2" =~ ^-*help$ && ("$commandType" == "little-aws" || "$commandType" == "little-basic") ]]; then
+      littleDoCommand help "$@"
+      return $?
+    fi
+    if [[ "$commandType" == "little-basic" ]]; then
+      # no need for AWS creds, just go
+      littleDoCommand "$@"
+      return $?
+    fi
+    # setup AWS creds env variables
     local profile
     profile="${AWS_PROFILE:-default}"
     local cacheFile
@@ -70,7 +133,7 @@ arun() {
 
     if [[ -z "$mfaSerial" && -z "$role" ]]; then
       # assume credentials are provided or available via metadata server
-      _doCommand "$@"
+      littleDoCommand "$@"
       return $?
     fi
 
@@ -129,9 +192,11 @@ arun() {
         export AWS_CACHE_FILE="$cacheFile"
         export AWS_TOKEN_EXPIRATION="$expiration"
         
-        _doCommand "$@"
+        littleDoCommand "$@"
     )
     return $?
 }
 
-arun "$@"
+if [[ -z "$GEN3_SOURCE_ONLY" ]]; then
+  littleRun "$@"
+fi

@@ -1,0 +1,22 @@
+{
+  "name": "@littleware/automation",
+  "version": "1.0.0",
+  "description": "placeholder for installing npm helper binaries",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frickjack/misc-stuff.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/frickjack/misc-stuff/issues"
+  },
+  "homepage": "https://github.com/frickjack/misc-stuff#readme",
+  "dependencies": {
+    "marked": "latest"
+  }
+}

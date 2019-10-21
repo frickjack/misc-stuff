@@ -13,7 +13,7 @@ Templates for CICD stacks (codebuild, pipeline, ...)
 
 ex:
 ```
-arun secret create applications/cicd/cell0/dev/github-token '{ "token": "the-token-value" }' 'github access token'
+little secret create applications/cicd/cell0/dev/github-token '{ "token": "the-token-value" }' 'github access token'
 ```
 
 ## nodeBuild template

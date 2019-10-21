@@ -32,7 +32,7 @@ stackBucketName() {
 }
 
 help() {
-    arun help stack
+    little help stack
 }
 
 getChangeSetName() {
@@ -139,7 +139,7 @@ apply() {
     if [[ -d "${stackDir}/code" ]]; then
         gen3_log_info "uploading stack code/ to s3"
         local s3CodePath
-        if ! s3CodePath="$(arun lambda upload "${stackDir}/code")"; then
+        if ! s3CodePath="$(little lambda upload "${stackDir}/code")"; then
             gen3_log_err "failed to stage code/ to s3"
             return 1
         fi

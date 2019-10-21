@@ -86,7 +86,7 @@ secretLookup() {
 # main -----------------
 
 if [[ $# -lt 1 || $1 =~ ^-*h(elp)?$ ]]; then
-  arun help secret
+  little help secret
   exit 1
 fi
 
@@ -102,6 +102,6 @@ case "$command" in
         ;;
     *)
         gen3_log_err "unknown command: $command"
-        arun help secret
+        little help secret
         ;;
 esac

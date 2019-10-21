@@ -6,7 +6,7 @@ Helpers for interacting with `cloudformation`.
 
 Most commands take form:
 ```
-arun stack command-name path/to/stackParams.json
+little stack command-name path/to/stackParams.json
 ```
 where `stackParams.json` includes properties for the stack name and parameters, and a `Littleware` block that includes the path to the template relative to the path in the `$LITTLE_HOME` environment variable (TODO - introduce a search path variable).
 
@@ -23,7 +23,7 @@ If the stack folder has a `code/` subfolder, then the stack helpers zip up the c
 Get the name of the S3 bucket devoted to cloudformation template staging (under the `/cf/` prefix) and other similar devops tasks.
 
 ```
-arun stack bucket
+little stack bucket
 ```
 
 ### create
@@ -31,7 +31,7 @@ arun stack bucket
 Create a new stack
 
 ```
-arun stack create path/to/stackParams.json
+little stack create path/to/stackParams.json
 ```
 
 ### describe
@@ -39,15 +39,15 @@ arun stack create path/to/stackParams.json
 Describe an existing stack
 
 ```
-arun stack describe path/to/stackParams.json
+little stack describe path/to/stackParams.json
 ```
 
 ### make-change
 
-Create a change set (with name `arun stack change-name`) for the specified stack
+Create a change set (with name `little stack change-name`) for the specified stack
 
 ```
-arun stack make-change path/to/stackParams.json
+little stack make-change path/to/stackParams.json
 ```
 
 ### rm-change
@@ -55,7 +55,7 @@ arun stack make-change path/to/stackParams.json
 Remove an unapplied change, so a new change may be submitted
 
 ```
-arun stack rm-change path/to/stackParams.json
+little stack rm-change path/to/stackParams.json
 ```
 
 ### show-change
@@ -63,7 +63,7 @@ arun stack rm-change path/to/stackParams.json
 Show the last change set created via `make-change`
 
 ```
-arun stack show-change path/to/stackParams.json
+little stack show-change path/to/stackParams.json
 ```
 
 ### exec-change
@@ -71,7 +71,7 @@ arun stack show-change path/to/stackParams.json
 Execute the last change set created via `make-change`
 
 ```
-arun stack exec-change path/to/stackParams.json
+little stack exec-change path/to/stackParams.json
 ```
 
 ### change-name
@@ -83,7 +83,7 @@ The change-set name for change-set operations (`make-change`, `show-change`, `ex
 Update an existing stack
 
 ```
-arun stack update path/to/stackParams.json
+little stack update path/to/stackParams.json
 ```
 
 ### delete
@@ -91,7 +91,7 @@ arun stack update path/to/stackParams.json
 Delete an existing stack, and its associated resources.
 
 ```
-arun stack delete path/to/stackParams.json
+little stack delete path/to/stackParams.json
 ```
 
 ### events
@@ -99,7 +99,7 @@ arun stack delete path/to/stackParams.json
 Retrieve the event log for a stack
 
 ```
-arun stack update path/to/stackParams.json
+little stack update path/to/stackParams.json
 ```
 
 ### filter-template
@@ -108,7 +108,7 @@ Apply filters to a cloudformation template.
 Currently the only filter inlines an `openapi.yaml` or `openapi.json` file in the template directory as the `Body` property
 
 ```
-arun stack filter-template path/to/template
+little stack filter-template path/to/template
 ```
 
 ### validate-template
@@ -116,5 +116,5 @@ arun stack filter-template path/to/template
 Validate a filtered (see filter-template) cloudformation template
 
 ```
-arun stack validate-template path/to/template
+little stack validate-template path/to/template
 ```

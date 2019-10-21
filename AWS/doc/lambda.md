@@ -10,7 +10,7 @@ Launch the `node10.x` lambda runtime [docker image](https://github.com/lambci/do
 
 Ex:
 ```
-$ arun lambda drun lambda.lambdaHandler '{ "eventName": "hello" }'
+$ little lambda drun lambda.lambdaHandler '{ "eventName": "hello" }'
 ```
 
 Note: this command requires a `./package.json` file to exist.
@@ -21,7 +21,7 @@ Package the contents of the current directory into a `bundle.zip` file.
 This command will erase an existing `bundle.zip`.
 
 ```
-$ arun lambda package
+$ little lambda package
 ```
 
 Note: this command requires a `./package.json` file to exist.
@@ -34,7 +34,7 @@ Note: this command requires a `./package.json` file to exist.
 region's cloudformation bucket with key `lambda/dev/${packageName}/${gitBranch}/bundle.zip`
 
 ```
-$ arun lambda upload
+$ little lambda upload
 ```
 
 Note: this command requires a `./package.json` file to exist.
