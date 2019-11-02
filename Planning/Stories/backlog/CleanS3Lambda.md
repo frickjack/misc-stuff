@@ -1,4 +1,4 @@
 # TL;DR
 
-TODO
+Clean up old lambda archives left in S3
 
