@@ -75,6 +75,10 @@ lambda management helpers
 
 simple markdown renderer
 
+* [publish](./publish.md)
+
+publish a message to an sns topic
+
 * [stacks](./stacks.md)
 
 cloudformation helpers
