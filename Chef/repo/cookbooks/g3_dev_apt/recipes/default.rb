@@ -15,7 +15,7 @@ apt_repository 'nodejs-apt-repo' do
   components ['main']
 end
 
-['apt-file', 'build-essential', 'dnsutils', 'figlet', 'git', 'gpg', 'jq', 'ldap-utils', 'less', 'nano', 'nodejs', 'python-dev', 'python-pip', 'python3-dev', 'python3-pip', 'unzip', 'vim', 'zip'].each do |name|
+['apt-file', 'build-essential', 'dnsutils', 'figlet', 'git', 'gpg', 'jq', 'ldap-utils', 'less', 'nano', 'nodejs', 'python-dev', 'python-pip', 'python3-dev', 'python3-pip', 'unzip', 'vim', 'xclip', 'zip'].each do |name|
   package 'g3-dev-'+name do
     package_name name
     action :upgrade
