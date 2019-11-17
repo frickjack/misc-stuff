@@ -1,6 +1,6 @@
 # TL;DR
 
-So you just got your brand spankin' new AWS account, and your team is launching like a rocket into the cloud.
+You just got your brand spankin' new AWS account, and your team is launching like a rocket into the cloud.
 How should you set this account thing up?
 Before playing with EC2 instances
 and S3 buckets and all the other toys at the application layer of the stack; 
