@@ -7,7 +7,7 @@ and S3 buckets and all the other toys at the application layer of the stack;
 you should figure out how you want to authenticate,
 authorize, and monitor users manipulating your base cloud infrastructure.  
 
-The following process describes one approach to inflating an AWS account before beginning application development.  Although the steps taken here are only suitable for a single account setup for an individual or small team, the approach (setting up authentication, roles for authorization, monitoring, a simple budget, and basic alerts) generalizes for use with a multi-account [AWS organization](https://aws.amazon.com/organizations/).
+The following process describes one approach to inflate an AWS account before beginning application development.  Although the steps taken here are only suitable for a single account setup for an individual or small team, the approach (setting up authentication, roles for authorization, monitoring, a simple budget, and basic alerts) generalizes for use with a multi-account [AWS organization](https://aws.amazon.com/organizations/).
 
 
 ## The Plan
@@ -160,13 +160,13 @@ the administrators that are trained to enforce least privilege access.
 We want to restrict which users can disable cloudtrail, because there's
 no reason to do that.  
 
-The administrator group also shared permissions to create other AWS
+The administrator group shares permissions to create other (non-IAM) AWS
 resources (whatever we want to allow in our account) with the group of operators.
-I'm not sure if it makes sense to have both an administrator group and an operator group -
+I'm not sure if it makes sense to have both an administrator group and an operator group,
 but one scenario might be that an administrator can setup IAM policies conditional on resource tags
 for a particular application or whatever, and an operator (maybe a `devops` specialist on a team) can then create and delete resources with the appropriate tags.
 
-The developer group cannot create new resources directly, but they
+The developer group members cannot create new resources directly, but they
 do have permissions to deploy new versions of an application (udpate a lambda, or change the backend on an api gateway, or upgrade an EC2 AMI, or modify S3 objects - that kind of thing).
 
 Finally - each application service has its own IAM role attached to its ECS container or EC2 instances or lambda or whatever.
@@ -237,22 +237,22 @@ Ok - let's do this thing.  As the `bootstrap` user:
 * setup IAM groups and roles
 
 ```
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 Check if the stack came up successfully:
 ```
-little stack events "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack events "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 If not, then you can delete the stack, fix whatever the problem is, and try again:
 ```
-little stack delete "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack delete "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 Similarly, you can modify a successfully deployed stack later:
 ```
-little stack update "$LITTLE_HOME/lib/cloudformation/accountSetup/iamSetup.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
+little stack update "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamSetup.json"
 ```
 
 * setup a real user for yourself
@@ -286,7 +286,7 @@ You can now deploy the following stacks as the new administrator user, and delet
 Update the cloudtrail parameters ([AWS/db/cloudformation/YourAccount/accountSetup/cloudTrail.json](https://github.com/frickjack/misc-stuff/blob/e458983f39ed100c38ab254ea6d626725f13d796/AWS/db/cloudformaton/frickjack/accountSetup/cloudTrail.json#L10)) with a bucket name unique to your account - something like `cloudtrail-management-$YourAccountName`.  You can retrieve the name of your account with `aws iam list-account-aliases`.
 
 ```
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/cloudTrail.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/cloudTrail.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/cloudTrail.json"
 ```
 
 * setup an SNS topic
@@ -294,7 +294,7 @@ little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/cloudTrail.jso
 Remember to set the notification e-mail in the parameters before deploying the SNS stack; or customize the template with a subscriber for whatever notification channel (Slack, SMS, ...) you prefer.  You can always add more subscribers to the topic later.
 
 ```
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/snsNotify.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/snsNotify.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/snsNotify.json"
 ```
 
 * setup alarms
@@ -303,13 +303,13 @@ Update the stack parameter files for the alaram stacks (`AWS/db/YourAccount/acco
 (`aws sns list-topics`) before deploying the following stacks:
 
 ```
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/guardDuty.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/guardDuty.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/guardDuty.json"
 
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/budgetAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/budgetAlarm.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/budgetAlarm.json"
 
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/rootAccountAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/rootAccountAlarm.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/rootAccountAlarm.json"
 
-little stack create "$LITTLE_HOME/lib/cloudformation/accountSetup/iamAlarm.json" "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamAlarm.json"
+little stack create "$LITTLE_HOME/db/cloudformation/YourAccountNameHere/accountSetup/iamAlarm.json"
 ```
 
 ## Summary
