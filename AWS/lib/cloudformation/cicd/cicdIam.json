@@ -5,7 +5,7 @@
         "Type": "String",
         "Description": "arn of secretsmanager secret for access token",
         "ConstraintDescription": "secret arn",
-        "AllowedPattern": "arn:.+"
+        "AllowedPattern": "arn:aws:secretsmanager:.+"
       }
     },
     "Resources": {
