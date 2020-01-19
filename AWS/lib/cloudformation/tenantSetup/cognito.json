@@ -11,7 +11,7 @@
             {
               "Name": "email",
               "AttributeDataType": "String",
-              "Mutable": false,
+              "Mutable": true,
               "Required": true
             }
           ],
@@ -39,10 +39,9 @@
         "LogoutURLs" : { "Ref": "LogoutURLs" },
         "UserPoolId": { "Ref": "UserPool" },
         "PreventUserExistenceErrors": "ENABLED",
-        "ReadAttributes": [ "email", "nickname", "locale", "picture", "profile" ],
-        "WriteAttributes": [ "email", "nickname", "locale", "picture", "profile" ],
         "SupportedIdentityProviders": [ "COGNITO", "Google" ]
-      }
+      },
+      "DependsOn": [ "GoogleIdP" ]
     },
     "CustomDomain": {
       "Type" : "AWS::Cognito::UserPoolDomain",
