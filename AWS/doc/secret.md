@@ -7,10 +7,15 @@ Helpers for interacting with AWS
 
 ### create
 
-Create a new secret.  The secret name should take form `$org/$project/$stack/$stage/$role` - details [here](./README.md)
+Create a new secretsmanager secret.  The secret name should take form `$org/$project/$stack/$stage/$role` - details [here](./README.md)
 
 ```
 little secret create org/project/stack/stage/role value description
+```
+
+Use `aws secretsmanager put-secret-value` to update a secret - ex:
+```
+aws secretsmanager put-secret-value --secret-id $(little secret lookup $name) --secrets-string $newValue
 ```
 
 ### lookup
