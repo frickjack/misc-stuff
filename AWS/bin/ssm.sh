@@ -41,7 +41,7 @@ saveParameter() {
     "Name": "${finalName}",
     "Description": "$description",
     "Value": "",
-    "Type": "SecureString",
+    "Type": "String",
     "Overwrite": true,
     "Tier": "Standard",
     "Tags": [
