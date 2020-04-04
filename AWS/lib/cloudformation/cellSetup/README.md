@@ -13,11 +13,37 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 
  First deployed api gets an endpoint of form: https://{api-id}.execute-api.{region}.amazonaws.com
 
+ ### Gateway Concepts
+
+ * the API itself and its underlying resources
+ * a deployment of the API - immutable
+ * a Stage instantiation of a deployment
+
+ It's a little confusing.  When we update an API, we must 
+ create a new deployment, then point a stage at that deployment.
+
+
 ## Mapping
 
-* different gateways for different api versions
+* API + lambda -> deployment
+* deployment mapped to stage
+* different stages for different api versions
 * custom domain
 * multiple domain mappings 
+
+## Tests
+
+Note - custom domain maps to subpath /core/:
+
+* https://api.frickjack.com/core/hello
+
+
+## TODO
+
+* CORS
+* Cookie domain
+* Lambda alias per stage
+* Deployment tool
 
 ## Resources
 

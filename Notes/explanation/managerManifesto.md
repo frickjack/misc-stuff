@@ -4,7 +4,7 @@ What does a manager do?
 
 ## Overview
 
-* Golden circule
+* Golden circle
     - why == mission
     - how == values, culture
     - what == current realization of why and how
@@ -26,11 +26,15 @@ What does a manager do?
         * product decisions - experiment, prototype
         * develop infrastructure for experimentation - test, collect metrics KPIs, evaluate results
     - lean out - do not commit to what we cannot reasonably deliver
+    - every communication is positive 
+        * every interaction between people should leave all parties fealing respected and listened to
+        * say what you have to say, listen to responses, answer questions; do not berate
     
 * Love the team
     - Insulate from external pressures
     - Give credit, take blame
     - Remove blockers
+    - Promote, reward, help reach goals
 
 * Set goals
     - Team goals
