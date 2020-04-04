@@ -35,7 +35,7 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 
 Note - custom domain maps to subpath /core/:
 
-* https://api.frickjack.com/core/hello
+* https://api.frickjack.com/authn/hello
 
 
 ## TODO
