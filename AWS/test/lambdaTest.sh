@@ -82,6 +82,7 @@ testLambdaUpload() {
     testDir="$(testLambdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
     path="$(little lambda upload)" \
+        && cd "$XDG_RUNTIME_DIR" \
         && /bin/rm -rf "$testDir";
         because $? "little lambda upload should succeed: $path"
     [[ "$path" =~ ^s3://.+/@littleware/bogus/_littleware_bogus-1_0_0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
