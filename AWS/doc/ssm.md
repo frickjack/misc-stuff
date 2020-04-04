@@ -8,7 +8,7 @@ We usually prefer systems manager parameters over secrets manager secrets, becau
 
 ### put-parameter
 
-Create or update an ssm parameter.  The parameter name should take form `$org.$project.$stack.$stage.$role` - details [here](./README.md)
+Create or update an ssm string parameter.  We use `string` rather than `secure-string` parameters, because SSM secure-string parameters are not well supported in CloudFormation.  The parameter name should take form `$org.$project.$stack.$stage.$role` - details [here](./README.md)
 
 ```
 little ssm put-param org.project.stack.stage.role $value $description
