@@ -31,7 +31,7 @@
         },
         {
             "ParameterKey": "LogoutURLs",
-            "ParameterValue": "https://apps.frickjack.com/authn/logoutCallback,https://api.frickjack.com/authn/loginCallback,http://localhost:3000/authn/logoutCallback,https://localhost:3043/authn/logoutCallback"
+            "ParameterValue": "https://apps.frickjack.com/authn/logoutCallback,https://api.frickjack.com/authn/logoutCallback,http://localhost:3000/authn/logoutCallback,https://localhost:3043/authn/logoutCallback"
         }
     ],
     "Tags": [
