@@ -1,5 +1,5 @@
 #
-# Some AWS lambda helpers
+# helpers for publishing web content to S3
 #
 
 source "${LITTLE_HOME}/lib/bash/utils.sh"

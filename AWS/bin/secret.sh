@@ -103,5 +103,6 @@ case "$command" in
     *)
         gen3_log_err "unknown command: $command"
         little help secret
+        exit 1
         ;;
 esac

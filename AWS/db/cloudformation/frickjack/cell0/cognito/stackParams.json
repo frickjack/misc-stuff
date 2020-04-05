@@ -12,6 +12,26 @@
         {
             "ParameterKey": "StageName",
             "ParameterValue": "prod"
+        },
+        {
+            "ParameterKey": "GoogleClientId",
+            "ParameterValue": "arn:aws:secretsmanager:us-east-2:027326493842:secret:applications/cognito/tenant0/prod/googleClient-5kLcVK"
+        },
+        {
+            "ParameterKey": "CertificateArn",
+            "ParameterValue": "arn:aws:acm:us-east-1:027326493842:certificate/c6aa46cf-9464-43d1-8ffa-3ce3980ff50c"
+        },
+        {
+            "ParameterKey": "DomainName",
+            "ParameterValue": "auth.frickjack.com"
+        },
+        {
+            "ParameterKey": "CallbackURLs",
+            "ParameterValue": "https://apps.frickjack.com/authn/loginCallback,https://api.frickjack.com/authn/loginCallback,http://localhost:3000/authn/loginCallback,https://localhost:3043/authn/loginCallback"
+        },
+        {
+            "ParameterKey": "LogoutURLs",
+            "ParameterValue": "https://apps.frickjack.com/authn/logoutCallback,https://api.frickjack.com/authn/logoutCallback,http://localhost:3000/authn/logoutCallback,https://localhost:3043/authn/logoutCallback"
         }
     ],
     "Tags": [

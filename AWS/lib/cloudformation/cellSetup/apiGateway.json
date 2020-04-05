@@ -40,6 +40,9 @@
       "Description": "arn of IAM role for lambda execution to assume",
       "ConstraintDescription": "IAM role arn"
     },
+    "LambdaConfig": {
+      "Type": "AWS::SSM::Parameter::Value<String>"
+    },
     "GatewayRole": {
       "Type": "String",
       "Description": "arn of IAM role for gateway to assume",
@@ -54,10 +57,12 @@
           "S3Bucket" : { "Ref": "LambdaBucket" },
           "S3Key" : { "Ref": "LambdaKey" }
         },
-        "Description" : "hello test function",
+        "Description" : "authn functions",
         "Environment" : {
           "Variables": { 
-            "LittleMessage": "hello" 
+            "LittleMessage": "hello",
+            "LITTLE_AUTHN_CONFIG": "{ \"type\": \"env\", \"value\": \"LITTLE_LAMBDA_CONFIG\" }",
+            "LITTLE_LAMBDA_CONFIG": {"Ref": "LambdaConfig"}
           }
         },
         "FunctionName" : { "Fn::Join": [ "-", ["api_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }, "authn"]] },
@@ -65,7 +70,7 @@
         "Layers" : { "Ref": "LambdaLayers" },
         "MemorySize" : 256,
         "Role" : { "Ref": "LambdaRole" },
-        "Runtime" : "nodejs10.x",
+        "Runtime" : "nodejs12.x",
         "Tags": [
           {
               "Key": "org",
@@ -119,6 +124,16 @@
           }
         }
     },
+
+    "apiDeploymentWithNullStage": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Description": "new deployment with authn",
+      "Properties": {
+        "RestApiId": {"Ref": "apiGateway"},
+        "StageName": "null"
+      }
+    },
+
     "apiStage": {
       "Type": "AWS::ApiGateway::Stage",
       "Properties": {
@@ -134,33 +149,27 @@
       }
     },
 
-    "apiDeploymentWithNullStage": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "Properties": {
-        "RestApiId": {"Ref": "apiGateway"},
-        "StageName": "null"
-      }
-    },
-
     "domainName": {
       "Type" : "AWS::ApiGateway::DomainName",
       "Properties" : {
           "CertificateArn" : { "Ref": "CertificateArn" },
           "DomainName" : { "Ref": "DomainName" },
-          "EndpointConfiguration" : { "Types": ["EDGE"] }
+          "EndpointConfiguration" : { "Types": ["EDGE"] },
+          "SecurityPolicy": "TLS_1_2"
         }
     },
 
     "domainMapping": {
       "Type": "AWS::ApiGateway::BasePathMapping",
       "Properties": {
-          "BasePath": "core",
+          "BasePath": "authn",
           "DomainName": {
               "Ref": "DomainName"
           },
           "RestApiId": {
               "Ref": "apiGateway"
-          }
+          },
+          "Stage": "v1"
       }
     }
   },

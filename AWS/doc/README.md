@@ -2,6 +2,25 @@
 
 Use documentation for the `little` helper script and its sub commands.
 
+## Setup
+
+The `little` scripts are currently installed and updated via `git`.
+
+```
+git clone https://github.com/frickjack/misc-stuff.git
+alias little='bash ~/Code/misc-stuff/AWS/little.sh'
+```
+
+### Dependencies
+
+* bash 4+
+* [jq](https://stedolan.github.io/jq/manual/)
+* [aws cli](https://aws.amazon.com/cli/).
+
+### Credentials
+
+The `little` commands require AWS credentials to interact with the AWS API.  There are a variety of ways to configure the AWS SDK - the [account setup notes](../../Notes/explanation/accountHydrate.md) have more details.
+
 ## Overview
 
 The `little` helper acquires an access token
@@ -74,6 +93,10 @@ lambda management helpers
 * [markdown](./markdown.md)
 
 simple markdown renderer
+
+* [publish](./publish.md)
+
+publish a message to an sns topic
 
 * [stacks](./stacks.md)
 

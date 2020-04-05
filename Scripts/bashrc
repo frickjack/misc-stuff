@@ -43,3 +43,6 @@ after() {
 awk 'BEGIN { found="false"; }; (found=="false" && $0 ~ /'"$key"'/) { found="true" }; (found=="true" && $0 ~ /@/) { print $0 }'
 }
 
+# typical aggregation:
+# cat $XDG_RUNTIME_DIR/s3Result_aRSoKE | grep 'username' | grep GET | awk '{ print $9 }' | sort | uniq -c
+

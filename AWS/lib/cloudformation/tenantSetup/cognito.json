@@ -11,7 +11,7 @@
             {
               "Name": "email",
               "AttributeDataType": "String",
-              "Mutable": false,
+              "Mutable": true,
               "Required": true
             }
           ],
@@ -29,9 +29,44 @@
     "UserPoolClient": {
       "Type": "AWS::Cognito::UserPoolClient",
       "Properties": {
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthFlows": [ "code" ],
+        "AllowedOAuthScopes": ["email", "openid"],
         "ClientName": "gateway",
+        "ExplicitAuthFlows": [ "ALLOW_REFRESH_TOKEN_AUTH" ],
         "GenerateSecret": true,
-        "UserPoolId": { "Ref": "UserPool" }
+        "CallbackURLs" : { "Ref": "CallbackURLs" },
+        "LogoutURLs" : { "Ref": "LogoutURLs" },
+        "UserPoolId": { "Ref": "UserPool" },
+        "PreventUserExistenceErrors": "ENABLED",
+        "SupportedIdentityProviders": [ "COGNITO", "Google" ]
+      },
+      "DependsOn": [ "GoogleIdP" ]
+    },
+    "CustomDomain": {
+      "Type" : "AWS::Cognito::UserPoolDomain",
+      "Properties" : {
+          "CustomDomainConfig" : {
+            "CertificateArn" : { "Ref": "CertificateArn" }
+          },
+          "Domain" : { "Ref": "DomainName" },
+          "UserPoolId" : { "Ref": "UserPool" }
+        }
+    },
+    "GoogleIdP": {
+      "Type" : "AWS::Cognito::UserPoolIdentityProvider",
+      "Properties" : {
+          "ProviderName" : "Google",
+          "ProviderType" : "Google",
+          "UserPoolId" : {"Ref": "UserPool"},
+          "AttributeMapping": {
+            "email": "email"
+          },
+          "ProviderDetails": {
+            "client_id": { "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientId}}" ]] },
+            "client_secret": { "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientSecret}}" ]] },
+            "authorize_scopes": "email openid"
+          }
       }
     }
   },
@@ -47,6 +82,32 @@
       "Description": "id of the production associated with this idp (prod, pre-prod, qa, dev)",
       "Default" : "prod",
       "AllowedValues": [ "prod", "pre-prod", "qa", "dev" ]
+    },
+    "CertificateArn": {
+      "Type": "String",
+      "Description": "arn of the ACM certificate for the custom domain",
+      "AllowedPattern": "^arn:aws:acm:\\S+",
+      "ConstraintDescription": "should be a valid dns domain"
+    },
+    "DomainName": {
+      "Type": "String",
+      "Description": "custom domain name for the cognito idp",
+      "AllowedPattern": "^[0-9a-z-]+\\.[0-9a-z\\.]+",
+      "ConstraintDescription": "should be a valid dns domain"
+    },
+    "GoogleClientId": {
+      "Type": "String",
+      "Description": "arn of secretsmanager secret for client id",
+      "ConstraintDescription": "secret arn",
+      "AllowedPattern": "arn:aws:secretsmanager:.+"
+    },
+    "CallbackURLs": {
+      "Type": "CommaDelimitedList",
+      "Description": "white list of client login callbacks"
+    },
+    "LogoutURLs": {
+      "Type": "CommaDelimitedList",
+      "Description": "white list of client logout callbacks"
     }
   }
 }

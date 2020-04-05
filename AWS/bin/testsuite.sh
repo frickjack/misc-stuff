@@ -33,5 +33,6 @@ source "$LITTLE_HOME/test/littleTest.sh"
 source "$LITTLE_HOME/test/lambdaTest.sh"
 source "$LITTLE_HOME/test/s3webTest.sh"
 source "$LITTLE_HOME/test/secretTest.sh"
+source "$LITTLE_HOME/test/ssmTest.sh"
 source "$LITTLE_HOME/test/stackTest.sh"
 shunit_summary

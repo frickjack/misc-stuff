@@ -14,6 +14,7 @@ export XDG_DATA_HOME=${XDG_DATA_HOME:-"${WORKSPACE}/.local/share"}
 
 
 # Jenkins special cases
+USER="${USER:-unknown}"
 if [[ -n "$JENKINS_HOME" && -n "$WORKSPACE" && -d "$WORKSPACE" ]]; then
   XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-"${WORKSPACE}/tmp/gen3-$USER"}
 else
