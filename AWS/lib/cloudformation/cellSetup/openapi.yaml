@@ -95,18 +95,37 @@ paths:
         type: aws_proxy
 
   /user:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - CORS
+      responses:
+        '500':
+          description: unexpected failure
+        '200':
+          description: CORS headers if applicable
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${apiLambda.Arn}/invocations"
+        passthroughBehavior: when_no_match
+        # lambda integration is always POST
+        httpMethod: POST
+        type: aws_proxy
     get:
       summary: retrieve small user profile
       consumes:
         - application/json
       produces:
         - application/json
-      parameters: 
-        - in: query
-          name: redirect_uri
-          schema:
-            type: string
-          description: post login redirect
       responses:
         '500':
           description: unexpected failure
