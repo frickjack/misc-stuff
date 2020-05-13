@@ -28,11 +28,8 @@ while [[ $# > 0 ]]; do
   fi
 done
 
-source "$LITTLE_HOME/test/utilsTest.sh"
-source "$LITTLE_HOME/test/littleTest.sh"
-source "$LITTLE_HOME/test/lambdaTest.sh"
-source "$LITTLE_HOME/test/s3webTest.sh"
-source "$LITTLE_HOME/test/secretTest.sh"
-source "$LITTLE_HOME/test/ssmTest.sh"
-source "$LITTLE_HOME/test/stackTest.sh"
+for name in "$LITTLE_HOME/test/"*Test.sh; do
+  source "$name"
+done
+
 shunit_summary

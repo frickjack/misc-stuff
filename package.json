@@ -18,6 +18,7 @@
   "homepage": "https://github.com/frickjack/misc-stuff#readme",
   "dependencies": {},
   "devDependencies": {
-    "marked": "latest"
+    "marked": "latest",
+    "nunjucks": "latest"
   }
 }
