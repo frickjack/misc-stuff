@@ -6,7 +6,7 @@ gitops aware heper for interacting with AWS lambda
 
 ### drun
 
-Launch the `node10.x` lambda runtime [docker image](https://github.com/lambci/docker-lambda) in the current directory, and run the specified handler with the given event.
+Launch the `node12.x` lambda runtime [docker image](https://github.com/lambci/docker-lambda) in the current directory, and run the specified handler with the given event.
 
 Ex:
 ```
@@ -15,13 +15,23 @@ $ little lambda drun lambda.lambdaHandler '{ "eventName": "hello" }'
 
 Note: this command requires a `./package.json` file to exist.
 
-### bundle
+### bundle [folderPath=.]
 
-Package the contents of the current directory into a `bundle.zip` file.
-This command will erase an existing `bundle.zip`.
+Package the contents of the given directory into a `bundle.zip` file under the folder.
+This command erases an existing `bundle.zip`.
 
 ```
-$ little lambda package
+$ little lambda bundle ./code/
+```
+
+Note: this command requires a `./package.json` file to exist.
+
+### s3_folder [folderPath=.]
+
+Get the S3 folder (key prefix) to which `lambda upload` will post the bundle for the given code folder.
+
+```
+little s3_path ./code/
 ```
 
 Note: this command requires a `./package.json` file to exist.

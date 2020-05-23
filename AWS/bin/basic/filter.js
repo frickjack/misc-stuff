@@ -6,6 +6,8 @@ const fsPromises = require("fs").promises;
 const nunjucks = require("nunjucks");
 const console = new require('console').Console(process.stderr);
 
+nunjucks.configure({ autoescape: false });
+
 function filterStrings(variablesStr, templateStr) {
     const variableValues = JSON.parse(variablesStr);
     try {

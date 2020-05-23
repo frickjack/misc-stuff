@@ -7,7 +7,7 @@ filter nunjucks templates with variables
 ### little filter $variablesInlineOrFile
 
 Filter the nunjucks template read from stdin with 
-the given variables.
+the given variables, and `autoescape` set false.
 
 Ex:
 ```

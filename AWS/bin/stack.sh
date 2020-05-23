@@ -41,12 +41,43 @@ getChangeSetName() {
     echo "$changeSetName"
 }
 
+#
+# Extract nunjucks variables from a stackParams.json
+#
+# @param stackPath or - to read stdin
+# @return echo nunjucks variables json
+#
+getStackVariables() {
+    local stackPath
+
+    if [[ $# -lt 1 ]]; then
+        # just output empty variable set
+        cat - <<EOM
+{
+  "stackParameters": {},
+  "stackTags": {},
+  "stackTagsStr":"", 
+  "stackVariables": {}  
+}
+EOM
+        return 0
+    fi
+    stackPath="$1"
+    shift
+    cat "$stackPath" | jq -r '{
+        "stackParameters": (.Parameters | map({ "key": .ParameterKey, "value": .ParameterValue }) | from_entries),
+        "stackTags": .Tags, 
+        "stackTagsStr":(.Tags | map(tostring) | join(",")), 
+        "stackVariables": .Littleware.Variables 
+}'
+}
+
 # 
 # Apply a cloudformation update or create
 #
 # @param commandStr --update or --create or --change
 # @param dryRun optional [--dryRun]
-# @param stackPath
+# @param stackPath path to stackParams.json file
 #
 apply() {
     local reqToken
@@ -113,43 +144,28 @@ apply() {
     # uniquely identify the update-stack request
     reqToken="apply-$(date +%Y-%m-%d-%H-%M-%S)"
 
-    if ! aws cloudformation validate-template --template-body "$(cat "$templatePath")"; then
-        gen3_log_err "template validation failed"
+    #
+    # assemble nunjucks variables from the stack file, 
+    # and filter the template
+    #
+    local filteredTemplate
+    filteredTemplate="$(mktemp "${XDG_RUNTIME_DIR}/templateFilter_XXXXXX")"
+    local stackVariables
+    stackVariables="$(getStackVariables "$stackPath")" || return 1
+    filterTemplate "$templatePath" "$stackVariables" | tee "$filteredTemplate" 1>&2
+    if ! aws cloudformation validate-template --template-body "$(cat "$filteredTemplate")"; then
+        gen3_log_err "template validation failed after filter"
         return 1
     else
         gen3_log_info "template validation ok"
     fi
-    local filteredTemplate
-    filteredTemplate="$(mktemp "${XDG_RUNTIME_DIR}/templateFilter_XXXXXX")"
-    filterTemplate "$templatePath" | tee "$filteredTemplate" 1>&2
     aws s3 cp "$filteredTemplate" "s3://${bucket}/$s3Path"
     rm "$filteredTemplate"
     skeleton="$(
         cat "$stackPath" | \
-        jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" '.TemplateURL=$url' | \
-        jq -r -e --arg token "$reqToken" '.ClientRequestToken=$token' | \
-        jq -r -e 'del(.Littleware)'
+        jq -r -e --arg url "https://${bucket}.s3.amazonaws.com/${s3Path}" --arg token "$reqToken" '.TemplateURL=$url | .ClientRequestToken=$token | del(.Littleware)'
     )"
 
-    local stackDir="$(dirname "$stackPath")"
-    #
-    # Upload the lambda code package to S3, and
-    # set the LambdaBucket and LambdaKey parameters
-    #
-    if [[ -d "${stackDir}/code" ]]; then
-        gen3_log_info "uploading stack code/ to s3"
-        local s3CodePath
-        if ! s3CodePath="$(little lambda upload "${stackDir}/code")"; then
-            gen3_log_err "failed to stage code/ to s3"
-            return 1
-        fi
-        skeleton="$(
-            clean="${s3CodePath#s3://}"
-            bucket="${clean%%/*}"
-            key="${clean#*/}"
-            jq -r --arg key "${key}" --arg bucket "${bucket}" '.Parameters += [{ "ParameterKey": "LambdaBucket", "ParameterValue": $bucket }, { "ParameterKey": "LambdaKey", "ParameterValue": $key } ]' <<<"$skeleton"
-            )"
-    fi
     if [[ "$commandStr" != "create-stack" ]]; then
         if ! skeleton="$(jq -r -e 'del(.TimeoutInMinutes) | del(.EnableTerminationProtection)' <<< "$skeleton")"; then
             gen3_log_err "failed to process $skeleton"
@@ -311,17 +327,28 @@ filterTemplate() {
     local templateFolder
     local templatePath
     local templateStr
+    local filterVariables="$(getStackVariables)"
     if [[ $# -lt 1 || ! -f "$1" ]]; then
       gen3_log_err "validate requires path to template: $@"
       return 1
     fi
     templatePath="$1"
     shift
+    if [[ $# -gt 0 ]]; then
+        filterVariables="$1"
+        shift
+    fi
     templateFolder="$(dirname "$templatePath")"
-    if ! templateStr="$(jq -e -r . < "$templatePath")"; then
-      gen3_log_err "Template failed json validation: $templatePath"
+    if ! templateStr="$(little filter "$filterVariables" < "$templatePath")"; then
+      gen3_log_err "Template filter failed: $templatePath"
       return 1
     fi
+    local temp
+    if ! temp="$(jq -e -r . <<< "$templateStr")"; then
+      gen3_log_err "Template failed json validation: $templateStr"
+      return 1
+    fi
+    templateStr="$temp"
     local openapi="{}"
     if [[ -f "${templateFolder}/openapi.yaml" ]]; then
         if ! openapi="$(yq -e -r . < "${templateFolder}/openapi.yaml")"; then
@@ -380,17 +407,20 @@ case "$command" in
     "events")
         events "$@"
         ;;
+    "filter-template")
+        filterTemplate "$@"
+        ;;
     "list")
         list "$@"
+        ;;
+    "variables")
+        getStackVariables "$@"
         ;;
     "update")
         update "$@"
         ;;
     "validate-template")
         validateTemplate "$@"
-        ;;
-    "filter-template")
-        filterTemplate "$@"
         ;;
     *)
         help
