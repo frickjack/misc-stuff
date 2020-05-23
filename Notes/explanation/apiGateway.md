@@ -1,7 +1,9 @@
 # TL;DR
 
 Our application platform begins with this foundation: 
+
 * a [cognito](https://aws.amazon.com/cognito/) [user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html) that manages client authentication as an [identity provider](https://en.wikipedia.org/wiki/Identity_provider)
+* an api gateway that implements an OAUTH client that manages authentication and web sessions
 * an [api gateway](https://aws.amazon.com/api-gateway/) that mediates client access to our API
 * an [S3 bucket]() behind a [cloudformation CDN]() that efficienly serves static assets (fonts, images, javascript, css, html, ...) to clients
 
@@ -63,6 +65,43 @@ Monitoring:
 * concurrency alerts
 * cloudwatch logs
 * X-Ray
+
+## Processes
+
+* new rest api and deployments when openapi changes
+* beta and prod deployments
+* beta and prod stages
+* lambda, version, and `gateway_prod` alias
+* prod stage variable references `gateway_prod` alias, beta stage references the lambda
+
+Whatever frickjack.  Cloudformation stack.
+
+* update the lambda to test new code in the beta stage
+* create a version, and update the alias to deploy code to the prod stage
+* update openapi.yaml to modify the api
+* create a new deployment, and assign to the beta and/or prod stage to deploy api changes
+
+### Mismatch between Cloudformation and gateway models.
+
+* code upload
+* openapi.yaml integration
+* variable substition
+* new deployments, lambda versions, publishing
+
+Want declarative infrastructure where the infrastructure declaration is
+dynamic based on a constrained configuration.
+
+Our solution - extend cloudformation templates with [nunjucks](https://mozilla.github.io/nunjucks), and introduce our own [little stack](../../doc/stack.md) CLI wrapper.
+
+[AWS CloudFormer](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cloudformer.html).  Rather than have a template and a config - have a template, a config, and a script.
+
+### Deploy new code
+
+bla
+
+### Update the API
+
+bla
 
 ## Multi-tenant
 

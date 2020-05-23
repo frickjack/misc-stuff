@@ -1,7 +1,7 @@
 const util = require("util");
 // import authn middleware from lambda layer mounted at /opt/commonjs
-const bridge = require("/opt/commonjs/bin/oidcClient/lambdaBridge.js"); 
-const confHelper = require("/opt/commonjs/bin/oidcClient/configHelper.js");
+const bridge = require("@littleware/little-authn/commonjs/bin/oidcClient/lambdaBridge.js"); 
+const confHelper = require("@littleware/little-authn/commonjs/bin/oidcClient/configHelper.js");
 
 /**
  * load authn config via LITTLE_AUTHN_CONFIG load rule - ex:
@@ -13,7 +13,7 @@ const confHelper = require("/opt/commonjs/bin/oidcClient/configHelper.js");
  * The [little-authn documentation](https://github.com/frickjack/little-authn/tree/master/Notes/howto/devTest.md)
  * has details on the format of the auth configuration value.
  */
-const loadRule = JSON.parse(process.env.LITTLE_AUTHN_CONFIG || "");
+const loadRule = JSON.parse(process.env.LITTLE_AUTHN_CONFIG || "null");
 if (!loadRule) {
     throw new Error("Unable to load config from LITTLE_AUTHN_CONFIG environment rule");
 }

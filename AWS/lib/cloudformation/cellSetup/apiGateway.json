@@ -30,11 +30,6 @@
       "Description": "key of s3 path to lambda package",
       "ConstraintDescription": "must be a valid s3 object key"
     },
-    "LambdaLayers": {
-      "Type": "CommaDelimitedList",
-      "Description": "Lambda layer ARN list",
-      "ConstraintDescription": "comma separated list of lambda layer arn's"
-    },
     "LambdaRole": {
       "Type": "String",
       "Description": "arn of IAM role for lambda execution to assume",
@@ -65,41 +60,42 @@
             "LITTLE_LAMBDA_CONFIG": {"Ref": "LambdaConfig"}
           }
         },
-        "FunctionName" : { "Fn::Join": [ "-", ["api_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }, "authn"]] },
+        "FunctionName" : { "Fn::Join": [ "-", ["authclient", { "Ref": "DomainName" },  { "Ref": "StackName" }, { "Ref": "StageName" }, "authn"]] },
         "Handler" : "index.lambdaHandler",
-        "Layers" : { "Ref": "LambdaLayers" },
         "MemorySize" : 256,
         "Role" : { "Ref": "LambdaRole" },
         "Runtime" : "nodejs12.x",
         "Tags": [
-          {
-              "Key": "org",
-              "Value": "applications"
-          },
-          {
-              "Key": "project",
-              "Value": "api.frickjack.com"
-          },
-          {
-              "Key": "stack",
-              "Value": { "Ref": "StackName" }
-          },
-          {
-              "Key": "stage",
-              "Value": { "Ref": "StageName" }
-          },
-          {
-            "Key": "role",
-            "Value": "api"
-          }
-      ],
-      "Timeout" : 3,
+          {{ stackTagsStr }}
+        ],
+        "Timeout" : 3,
         "TracingConfig" : {
           "Mode": "Active"
         }
       }
     },
-    "lambdaPermission": {
+
+    {% for item in stackVariables.lambdaVersions %}
+      "{{ item.resourceName }}": {
+        "Type" : "AWS::Lambda::Version",
+        "Properties" : {
+            "FunctionName" : { "Ref": "apiLambda" },
+            "Description": "{{ item.description }}"
+          }
+      },
+    {% endfor %}
+
+    "prodLambdaAlias": {
+      "Type" : "AWS::Lambda::Alias",
+      "Properties" : {
+          "Description" : "prod stage lambda alias",
+          "FunctionName" : { "Ref": "apiLambda" },
+          "FunctionVersion" : { "Fn::GetAtt": ["{{ stackVariables.prodLambdaVersion }}", "Version"] },
+          "Name" : "gateway_prod"
+        }
+    },
+
+    "betaPermission": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:invokeFunction",
@@ -110,6 +106,19 @@
         ]}
       }
     },
+
+    "prodPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:invokeFunction",
+        "FunctionName": {"Fn::Join": [":", [{"Fn::GetAtt": ["apiLambda", "Arn"]}, "gateway_prod"]]},
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {"Fn::Join": ["", 
+          ["arn:aws:execute-api:", {"Ref": "AWS::Region"}, ":", {"Ref": "AWS::AccountId"}, ":", {"Ref": "apiGateway"}, "/*"]
+        ]}
+      }
+    },
+
     "apiGateway": {
       "Type" : "AWS::ApiGateway::RestApi",
       "Properties" : {
@@ -118,26 +127,33 @@
             "Types": ["EDGE"]
           },
           "MinimumCompressionSize" : 128,
-          "Name" : { "Fn::Join": [ "-", ["api_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }]] },
+          "Name" : { "Fn::Join": [ "-", ["apiclient_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }]] },
           "Body": {
             "info": "little stack commands insert openapi.yaml here"
-          }
+          },
+          "Tags": [
+            {{ stackTagsStr }}
+          ]
         }
     },
 
-    "apiDeploymentWithNullStage": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "Description": "new deployment with authn",
-      "Properties": {
-        "RestApiId": {"Ref": "apiGateway"},
-        "StageName": "null"
-      }
-    },
+    {% for item in stackVariables.gatewayDeployments %}
+      "{{ item.resourceName }}": {
+        "Type": "AWS::ApiGateway::Deployment",
+        "Description": "{{ item.description }}",
+        "Properties": {
+          "RestApiId": {"Ref": "apiGateway"},
+          "Tags": [
+            {{ stackTagsStr }}
+          ]
+        }
+      },
+    {% endfor %}
 
-    "apiStage": {
+    "prodStage": {
       "Type": "AWS::ApiGateway::Stage",
       "Properties": {
-        "DeploymentId": { "Ref": "apiDeploymentWithNullStage" },
+        "DeploymentId": { "Ref": "{{ stackVariables.prodDeployment }}" },
         "MethodSettings": [{
           "DataTraceEnabled": true,
           "HttpMethod": "*",
@@ -145,11 +161,41 @@
           "ResourcePath": "/*"
         }],
         "RestApiId": {"Ref": "apiGateway"},
-        "StageName": "v1"
+        "StageName": "prod",
+        "Variables": {
+          "functionName": {"Fn::Join": [":", [
+              {"Ref": "apiLambda"},
+              "gateway_prod"
+          ]]}
+        },
+        "Tags": [
+          {{ stackTagsStr }}
+        ]
       }
     },
 
-    "domainName": {
+    "betaStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": { "Ref": "{{ stackVariables.betaDeployment }}" },
+        "MethodSettings": [{
+          "DataTraceEnabled": true,
+          "HttpMethod": "*",
+          "LoggingLevel": "INFO",
+          "ResourcePath": "/*"
+        }],
+        "RestApiId": {"Ref": "apiGateway"},
+        "StageName": "beta",
+        "Variables": {
+          "functionName": {"Ref": "apiLambda"}
+        },
+        "Tags": [
+          {{ stackTagsStr }}
+        ]
+      }
+    },
+
+    "prodDomainName": {
       "Type" : "AWS::ApiGateway::DomainName",
       "Properties" : {
           "CertificateArn" : { "Ref": "CertificateArn" },
@@ -159,17 +205,41 @@
         }
     },
 
-    "domainMapping": {
+    "betaDomainName": {
+      "Type" : "AWS::ApiGateway::DomainName",
+      "Properties" : {
+          "CertificateArn" : { "Ref": "CertificateArn" },
+          "DomainName" : {"Fn::Join": ["",
+            ["beta-", { "Ref": "DomainName" }]]
+          },
+          "EndpointConfiguration" : { "Types": ["EDGE"] },
+          "SecurityPolicy": "TLS_1_2"
+        }
+    },
+
+    "prodDomainMapping": {
       "Type": "AWS::ApiGateway::BasePathMapping",
       "Properties": {
           "BasePath": "authn",
           "DomainName": {
-              "Ref": "DomainName"
+            "Ref": "prodDomainName"
           },
           "RestApiId": {
               "Ref": "apiGateway"
           },
-          "Stage": "v1"
+          "Stage": "prod"
+      }
+    },
+
+    "betaDomainMapping": {
+      "Type": "AWS::ApiGateway::BasePathMapping",
+      "Properties": {
+          "BasePath": "authn",
+          "DomainName": { "Ref": "betaDomainName" },
+          "RestApiId": {
+              "Ref": "apiGateway"
+          },
+          "Stage": "beta"
       }
     }
   },

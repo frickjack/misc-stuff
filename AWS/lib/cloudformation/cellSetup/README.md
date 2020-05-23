@@ -15,12 +15,31 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 
  ### Gateway Concepts
 
- * the API itself and its underlying resources
- * a deployment of the API - immutable
- * a Stage instantiation of a deployment
+* a lambda function
+* the API itself specified with `openapi.yaml` to proxy the lambda
+* a deployment of the API - immutable
+* a beta stage that directly references the lamda function
+* a prod stage that references a `gateway_prod` lambda alias
 
  It's a little confusing.  When we update an API, we must 
  create a new deployment, then point a stage at that deployment.
+
+### Development process
+
+For a code change:
+ 
+* update `code/`
+* update the stack - this deploys the new `code/`
+* test the `beta.` stage
+* update the `gateway_prod` lambda alias to manage the prod-stage deployment
+
+For api changes:
+
+* update the openapi definition
+* update the stack - this updates the rest api, and deploys new code
+* publish a new api deployment, and link the new api deployment to the beta stage
+* test the `beta.` stage
+* the new api deployment to the prod stage
 
 
 ## Mapping
@@ -35,8 +54,10 @@ Note: the iamSetup account-level stack deploys an [ApiGatewayAccount](https://do
 
 Note - custom domain maps to subpath /core/:
 
-* https://api.frickjack.com/authn/hello
+* https://apiclient.frickjack.com/authn/hello
 
+The `sampleStackParams.json` is used by the stack filter test
+suite (`little testsuite --filter testStackFilter`), and illustrates how to configure a stack.
 
 ## TODO
 

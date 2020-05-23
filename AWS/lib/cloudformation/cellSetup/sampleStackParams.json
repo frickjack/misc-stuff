@@ -1,5 +1,5 @@
 {
-    "StackName": "little-frickjack-gateway-apiclient",
+    "StackName": "sample-gateway-apiclient",
     "Capabilities": [
     ],
     "TimeoutInMinutes": 5,
@@ -33,12 +33,10 @@
             "ParameterKey": "LambdaConfig",
             "ParameterValue": "applications.api-frickjack-com.reuben.dev.oidc-client-secret"
         },
-
         { 
             "ParameterKey": "LambdaBucket",
             "ParameterValue": "cloudformation-frickjack-us-east-2"
         },
-
         { 
             "ParameterKey": "LambdaKey",
             "ParameterValue": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200425_200627.zip"
@@ -71,19 +69,19 @@
         "Variables": {
             "lambdaVersions": [
                 {
-                    "resourceName": "lambdaVer20200523r0",
+                    "resourceName": "version-1-0-0",
                     "description": "initial prod version"
                 }
             ],
             "gatewayDeployments": [
                 {
-                    "resourceName": "deploy20200523r0",
+                    "resourceName": "version-1-0-0",
                     "description": "initial deployment"
                 }
             ],
-            "prodLambdaVersion": "lambdaVer20200523r0",
-            "prodDeployment": "deploy20200523r0",
-            "betaDeployment": "deploy20200523r0"
+            "prodLambdaVersion": "version-1-0-0",
+            "prodDeployment": "version-1-0-0",
+            "betaDeployment": "version-1-0-0"
         }
     }
 }
