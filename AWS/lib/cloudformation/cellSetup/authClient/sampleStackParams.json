@@ -69,19 +69,19 @@
         "Variables": {
             "lambdaVersions": [
                 {
-                    "resourceName": "version-1-0-0",
+                    "resourceName": "lambdaVer20200523r0",
                     "description": "initial prod version"
                 }
             ],
             "gatewayDeployments": [
                 {
-                    "resourceName": "version-1-0-0",
+                    "resourceName": "deploy20200523r0",
                     "description": "initial deployment"
                 }
             ],
-            "prodLambdaVersion": "version-1-0-0",
-            "prodDeployment": "version-1-0-0",
-            "betaDeployment": "version-1-0-0"
+            "prodLambdaVersion": "lambdaVer20200523r0",
+            "prodDeployment": "deploy20200523r0",
+            "betaDeployment": "deploy20200523r0"
         }
     }
 }

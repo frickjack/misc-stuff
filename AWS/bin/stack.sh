@@ -153,7 +153,7 @@ apply() {
     local stackVariables
     stackVariables="$(getStackVariables "$stackPath")" || return 1
     filterTemplate "$templatePath" "$stackVariables" | tee "$filteredTemplate" 1>&2
-    if ! aws cloudformation validate-template --template-body "$(cat "$filteredTemplate")"; then
+    if ! aws cloudformation validate-template --template-body "$(cat "$filteredTemplate")" > /dev/null; then
         gen3_log_err "template validation failed after filter"
         return 1
     else
@@ -317,10 +317,41 @@ EOM
     aws cloudformation list-stacks --cli-input-json "${cliInput}"
 }
 
+#
+# Helper for easy CLI access
+#
+filterStack() {
+    if [[ $# -lt 1 || ! -f "$1" ]]; then
+        gen3_log_err "invalid stack path: $1"
+        return 1
+    fi
+    local stackPath="$1"
+    shift
+    local templatePath
+    local stackVariables
+    if ! templatePath="${LITTLE_HOME}/$(jq -r -e .Littleware.TemplatePath < "$stackPath")" || ! [[ -f "$templatePath" ]]; then
+        gen3_log_err "templatePath does not exist: ${templatePath}"
+        return 1
+    fi
+    if [[ ! -f "$templatePath" ]]; then
+        gen3_log_err "unable to load template $templatePath"
+        return 1
+    fi
+    stackVariables="$(getStackVariables "$stackPath")" || return 1
+    filterTemplate "$templatePath" "$stackVariables" | tee "$filteredTemplate" 1>&2
+}
+
+validateStack() {
+    local templateStr
+    templateStr="$(filterStack "$@")" || return 1
+    aws cloudformation validate-template --template-body "$templateStr"
+}
+
 validateTemplate() {
     local templateStr
-    templateStr="$(filterTemplate "$@")"
-    aws cloudformation validate-template --template-body "$templateStr"
+    templateStr="$(filterTemplate "$@")" || return 1
+    aws cloudformation validate-template --template-body "$templateStr" | cat -
+    return "${PIPESTATUS[0]}"
 }
 
 filterTemplate() {
@@ -407,6 +438,9 @@ case "$command" in
     "events")
         events "$@"
         ;;
+    "filter")
+        filterStack "$@"
+        ;;
     "filter-template")
         filterTemplate "$@"
         ;;
@@ -418,6 +452,9 @@ case "$command" in
         ;;
     "update")
         update "$@"
+        ;;
+    "validate")
+        validateStack "$@"
         ;;
     "validate-template")
         validateTemplate "$@"

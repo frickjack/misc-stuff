@@ -42,7 +42,7 @@ function readStdin() {
             }
         }
         const endListener = () => {
-            console.log("stdin end");
+            //console.log("stdin end");
             resolve(Buffer.concat(buffList).toString('utf8'));
             clearListeners();
         };
@@ -87,6 +87,7 @@ function main() {
     filterPaths(myArgs[0], myArgs[1]).catch(
         (err) => {
             console.log(err);
+            process.exit(1);
         }
     );
 }

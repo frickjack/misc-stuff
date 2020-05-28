@@ -1,10 +1,17 @@
 testStackValidate() {
   local templates
   local path
-  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type f -name '*.json' -o -name '*.yaml' | grep -v openapi | grep -v petstore)"
+  local folder
+  local variables
+  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type f -name '*.json' -o -name '*.yaml' | grep -v openapi | grep -v petstore | grep -v sampleStackParams)"
   for path in $templates; do
-    gen3_log_info "Validating template at $path"
-    little stack validate-template "$path"; because $? "this is a valid template: $path"
+    folder="$(dirname "$path")"
+    variables="$(little stack variables)"; because $? "stack filter collected default variable set"
+    if [[ -f "$folder/sampleStackParams.json" ]]; then
+      variables="$(little stack variables "$folder/sampleStackParams.json")"
+    fi
+    gen3_log_info "Validating template at $path with variables $variables"
+    little stack validate-template "$path" "$variables"; because $? "this is a valid template: $path"
   done
 }
 
