@@ -1,5 +1,5 @@
 {
-    "StackName": "little-frickjack-gateway-apiclient",
+    "StackName": "little-frickjack-gateway-authclient",
     "Capabilities": [
     ],
     "TimeoutInMinutes": 5,
@@ -11,7 +11,7 @@
         },
         {
             "ParameterKey": "DomainName",
-            "ParameterValue": "apiclient.frickjack.com"
+            "ParameterValue": "api.frickjack.com"
         },
         {
             "ParameterKey": "StackName",
@@ -51,7 +51,7 @@
             },
             {
                 "Key": "project",
-                "Value": "apiclient.frickjack.com"
+                "Value": "api.frickjack.com"
             },
             {
                 "Key": "stack",
@@ -67,7 +67,7 @@
             }
     ],
     "Littleware": {
-        "TemplatePath": "lib/cloudformation/cellSetup/authClient/apiGateway.json",
+        "TemplatePath": "lib/cloudformation/cellSetup/api/authclient/apiGateway.json",
         "Variables": {
             "lambdaVersions": [
                 {

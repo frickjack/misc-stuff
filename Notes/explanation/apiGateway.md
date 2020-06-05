@@ -1,13 +1,17 @@
 # TL;DR
 
+A sketch of the infrastructure resources ...
+
+## Overview
+
 Our application platform begins with this foundation: 
 
 * a [cognito](https://aws.amazon.com/cognito/) [user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html) that manages client authentication as an [identity provider](https://en.wikipedia.org/wiki/Identity_provider)
 * an api gateway that implements an OAUTH client that manages authentication and web sessions
 * an [api gateway](https://aws.amazon.com/api-gateway/) that mediates client access to our API
-* an [S3 bucket]() behind a [cloudformation CDN]() that efficienly serves static assets (fonts, images, javascript, css, html, ...) to clients
+* an [S3 bucket]() behind a [cloudformation CDN]() that efficienly serves static assets (fonts, images, javascript, css, html, ...) and webapps to clients
 
-## API Gateway
+## API Gateway 
 
 An [api gateway](https://aws.amazon.com/api-gateway/) decouples several concerns from the developers and operators of an API.
 
@@ -23,6 +27,65 @@ An [api gateway](https://aws.amazon.com/api-gateway/) decouples several concerns
 * deployment management - canaries, versioning
 
 Cloud version of an application server - ingress to a service mesh.
+
+* the `@littleware/little-authn` node module that implements a webapp that provides a Cognito OAUTH client, and manages web sessions
+* a lambda that configures and deploys the node module
+* a lambda alias that references a "production" version of the lambda
+* an [api gateway](https://aws.amazon.com/api-gateway/) REST api that associates an [openapi]() specifaction with a lambda via stage variables
+* a production [deployment]() to a [gateway stage]() with a stage variable that associates the REST api with the production lambda alias
+* a beta deployment to a stage that links the API with the un-versioned lambda
+* a production gateway domain with a mapping that links the production stage to one sub-path under the domain
+* a beta domain that links to the beta stage
+
+
+## API Stack Overview
+
+An API stack consists of one or more API gateways
+deployed under different HTTP paths of a DNS domain
+managed by a CDN or load balancer.
+
+### API
+
+Each littleware API has the following:
+
+* a lambda function
+* the API itself specified with `openapi.yaml` to proxy the lambda
+* a deployment of the API - immutable
+* a beta stage that directly references the lamda function
+* a prod stage that references a `gateway_prod` lambda alias
+
+We update the signature of an API by 
+creating a new deployment, then pointing a stage at that deployment.
+
+We update the code behind an API by pushing a new code package to the lambda, or publishing a new lambda version, and updating the lambda alias referenced by a gateway stage.
+
+### Domain
+
+AWS gateway infrastructure includes support for automatically
+managing a [gateway domain]() with [mappings]() for one or more
+API's.  For example, one api, `api1`, might be accessed via
+https://my.domain/api1, while `api2` is at https://my.domain/api2.
+It's also possible to self-manage multiple api's behind
+a [custom cloudfront domain](https://aws.amazon.com/premiumsupport/knowledge-center/api-gateway-cloudfront-distribution/).
+
+
+### Development process
+
+For a code change:
+ 
+* update `code/`
+* update the stack - this deploys the new `code/`
+* test the `beta.` stage
+* update the `gateway_prod` lambda alias to manage the prod-stage deployment
+
+For api changes:
+
+* update the openapi definition
+* update the stack - this updates the rest api, and deploys new code
+* publish a new api deployment, and link the new api deployment to the beta stage
+* test the `beta.` stage
+* the new api deployment to the prod stage
+
 
 ## Dev environment
 
