@@ -117,6 +117,13 @@ Filter a template with variables extracted from a littleware stack json:
 little stack filter-template "$LITTLE_HOME/AWS/lib/cloudformation/cellSetup/apiGateway.json" "$(little stack variables "$LITTLE_HOME/AWS/lib/cloudformation/cellSetup/sampleStackParams.json")"
 ```
 
+### resources
+
+Shortcut for `aws cloudformation list-resources` - ex:
+
+```
+little stack resources ./stackParams.json
+```
 
 ### variables
 

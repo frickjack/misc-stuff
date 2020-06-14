@@ -41,7 +41,7 @@
 
         { 
             "ParameterKey": "LambdaKey",
-            "ParameterValue": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200425_200627.zip"
+            "ParameterValue": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200613_125848.zip"
         }
     ],
     "Tags": [

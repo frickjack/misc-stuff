@@ -179,8 +179,8 @@ lambdaUpload() {
       zipPath="$1"
       shift
     fi
-    s3Folder="$(lambdaS3Path "$zipPath")" || return $?
-        
+    s3Folder="$(lambdaS3Folder "$zipPath")" || return $?
+
     (
         cd "$zipPath" && \
             bundle="$(lambdaBundle)" && \

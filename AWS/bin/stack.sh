@@ -397,6 +397,18 @@ filterTemplate() {
     jq -e --argjson openapi "${openapi}" -r '.Resources=(.Resources | map_values(if .Type == "AWS::ApiGateway::RestApi" then .Properties.Body=$openapi else . end))' <<< "$templateStr"
 }
 
+resources() {
+    local stackPath="$1"
+    shift || return 1
+    aws cloudformation describe-stack-resources --stack-name "$(jq -r .StackName < "$stackPath")"
+}
+
+resourceLog() {
+    aws cloudformation list-stack-resources --stack-name little-frickjack-gateway-authclient
+    "authclient-api-frickjack-com-reuben-dev-authn"
+    aws logs describe-log-streams --log-group-name "/aws/lambda/authclient-api-frickjack-com-reuben-dev-authn"
+}
+
 # main -----------------
 
 if [[ $# -lt 1 || $1 =~ ^-*h(elp)?$ ]]; then
@@ -416,6 +428,9 @@ case "$command" in
         ;;
     "make-change")
         makeChange "$@"
+        ;;
+    "resources")
+        resources "$@"
         ;;
     "rm-change")
         rmChange "$@"
