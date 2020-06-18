@@ -27,11 +27,11 @@
         },
         {
             "ParameterKey": "CallbackURLs",
-            "ParameterValue": "https://apps.frickjack.com/authn/loginCallback,https://api.frickjack.com/authn/loginCallback,https://authclient.frickjack.com/authn/loginCallback,https://beta-authclient.frickjack.com/authn/loginCallback,http://localhost:3000/authn/loginCallback,https://localhost:3043/authn/loginCallback"
+            "ParameterValue": "https://apps.frickjack.com/authn/loginCallback,https://api.frickjack.com/authn/loginCallback,https://beta-api.frickjack.com/authn/loginCallback,http://localhost:3000/authn/loginCallback,https://localhost:3043/authn/loginCallback"
         },
         {
             "ParameterKey": "LogoutURLs",
-            "ParameterValue": "https://apps.frickjack.com/authn/logoutCallback,https://api.frickjack.com/authn/logoutCallback,https://authclient.frickjack.com/authn/logoutCallback,https://beta-authclient.frickjack.com/authn/logoutCallback,http://localhost:3000/authn/logoutCallback,https://localhost:3043/authn/logoutCallback"
+            "ParameterValue": "https://apps.frickjack.com/authn/logoutCallback,https://api.frickjack.com/authn/logoutCallback,https://beta-api.frickjack.com/authn/logoutCallback,http://localhost:3000/authn/logoutCallback,https://localhost:3043/authn/logoutCallback"
         }
     ],
     "Tags": [
