@@ -32,15 +32,6 @@
         { 
             "ParameterKey": "LambdaConfig",
             "ParameterValue": "applications.api-frickjack-com.reuben.dev.oidc-client-secret"
-        },
-
-        { 
-            "ParameterKey": "LambdaBucket",
-            "ParameterValue": "cloudformation-frickjack-us-east-2"
-        },
-        { 
-            "ParameterKey": "LambdaKey",
-            "ParameterValue": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200618_105858.zip"
         }
     ],
     "Tags": [

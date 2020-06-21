@@ -23,11 +23,13 @@
     "LambdaBucket": {
       "Type": "String",
       "Description": "bucket of s3 with lambda package",
+      "Default": "{{ stackBucket }}",
       "ConstraintDescription": "must be a valid s3 bucket"
     },
     "LambdaKey": {
       "Type": "String",
       "Description": "key of s3 path to lambda package",
+      "Default": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200618_105858.zip",
       "ConstraintDescription": "must be a valid s3 object key"
     },
     "LambdaRole": {
@@ -128,9 +130,7 @@
           },
           "MinimumCompressionSize" : 128,
           "Name" : { "Fn::Join": [ "-", ["apiclient_frickjack_com", { "Ref": "StackName" }, { "Ref": "StageName" }]] },
-          "Body": {
-            "info": "little stack commands insert openapi.yaml here"
-          },
+          "Body": {{ templateFiles.openapi }},
           "Tags": [
             {{ stackTagsStr }}
           ]

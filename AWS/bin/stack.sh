@@ -42,13 +42,16 @@ getChangeSetName() {
 }
 
 #
-# Extract nunjucks variables from a stackParams.json
+# Extract nunjucks variables from a stackParams.json.
+# Also assemble openapi from template folder.
 #
 # @param stackPath or - to read stdin
 # @return echo nunjucks variables json
 #
 getStackVariables() {
     local stackPath
+    local bucket="$(stackBucketName)"
+    local openapi="{}"
 
     if [[ $# -lt 1 ]]; then
         # just output empty variable set
@@ -57,18 +60,43 @@ getStackVariables() {
   "stackParameters": {},
   "stackTags": {},
   "stackTagsStr":"", 
-  "stackVariables": {}  
+  "stackVariables": {},
+  "stackBucket": "$bucket",
+  "templateFiles": {
+      "openapi": "$openapi"
+  }
 }
 EOM
         return 0
     fi
     stackPath="$1"
     shift
-    cat "$stackPath" | jq -r '{
+    local templatePath
+    if templatePath="${LITTLE_HOME}/$(jq -r -e .Littleware.TemplatePath < "$stackPath")" && [[ -f "$templatePath" ]]; then
+        local templateFolder="$(dirname "$templatePath")"
+        local openApiPath="${templateFolder}/openapi.yaml"
+        if [[ ! -f "$openApiPath" ]]; then
+            openApiPath="${templateFolder}/openapi.json"
+        fi
+        if [[ -f "$openApiPath" ]]; then
+            if ! openapi="$(yq -e -r . < "$openApiPath")"; then
+                gen3_log_err "failed to parse $openApiPath"
+                return 1
+            fi
+        else
+            gen3_log_info "no openapi file found in $templateFolder"
+        fi
+    fi
+
+    cat "$stackPath" | jq --arg bucket "$bucket" --arg openapi "$openapi" -r '{
         "stackParameters": (.Parameters | map({ "key": .ParameterKey, "value": .ParameterValue }) | from_entries),
         "stackTags": .Tags, 
         "stackTagsStr":(.Tags | map(tostring) | join(",")), 
-        "stackVariables": .Littleware.Variables 
+        "stackVariables": .Littleware.Variables,
+        "stackBucket": $bucket,
+        "templateFiles": {
+            "openapi": $openapi
+        }
 }'
 }
 
@@ -338,7 +366,7 @@ filterStack() {
         return 1
     fi
     stackVariables="$(getStackVariables "$stackPath")" || return 1
-    filterTemplate "$templatePath" "$stackVariables" | tee "$filteredTemplate" 1>&2
+    filterTemplate "$templatePath" "$stackVariables"
 }
 
 validateStack() {
@@ -355,9 +383,9 @@ validateTemplate() {
 }
 
 filterTemplate() {
-    local templateFolder
     local templatePath
     local templateStr
+    # initialize filterVariables with empty set
     local filterVariables="$(getStackVariables)"
     if [[ $# -lt 1 || ! -f "$1" ]]; then
       gen3_log_err "validate requires path to template: $@"
@@ -369,44 +397,21 @@ filterTemplate() {
         filterVariables="$1"
         shift
     fi
-    templateFolder="$(dirname "$templatePath")"
     if ! templateStr="$(little filter "$filterVariables" < "$templatePath")"; then
       gen3_log_err "Template filter failed: $templatePath"
       return 1
     fi
     local temp
-    if ! temp="$(jq -e -r . <<< "$templateStr")"; then
+    if ! jq -e -r . <<< "$templateStr"; then
       gen3_log_err "Template failed json validation: $templateStr"
       return 1
     fi
-    templateStr="$temp"
-    local openapi="{}"
-    if [[ -f "${templateFolder}/openapi.yaml" ]]; then
-        if ! openapi="$(yq -e -r . < "${templateFolder}/openapi.yaml")"; then
-          gen3_log_err "failed to parse ${templateFolder}/openapi.yaml"
-          return 1
-        fi
-    elif [[ -f "${templateFolder}/openapi.json" ]]; then
-        if ! openapi="$(jq -e -r . < "${templateFolder}/openapi.json")"; then
-          gen3_log_err "failed to parse ${templateFolder}/openapi.json"
-          return 1
-        fi
-    else
-        gen3_log_info "no openapi file found in $templateFolder"
-    fi
-    jq -e --argjson openapi "${openapi}" -r '.Resources=(.Resources | map_values(if .Type == "AWS::ApiGateway::RestApi" then .Properties.Body=$openapi else . end))' <<< "$templateStr"
 }
 
 resources() {
     local stackPath="$1"
     shift || return 1
     aws cloudformation describe-stack-resources --stack-name "$(jq -r .StackName < "$stackPath")"
-}
-
-resourceLog() {
-    aws cloudformation list-stack-resources --stack-name little-frickjack-gateway-authclient
-    "authclient-api-frickjack-com-reuben-dev-authn"
-    aws logs describe-log-streams --log-group-name "/aws/lambda/authclient-api-frickjack-com-reuben-dev-authn"
 }
 
 # main -----------------

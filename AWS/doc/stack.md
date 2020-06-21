@@ -6,11 +6,11 @@ Helpers for interacting with `cloudformation`.
 
 Most commands take form:
 ```
-little stack command-name path/to/stackParams.json
+little stack command-name [--dryRun] path/to/stackParams.json
 ```
 where `stackParams.json` includes properties for the stack name and parameters, and a `Littleware` block that includes the path to the template relative to the path in the `$LITTLE_HOME` environment variable (TODO - introduce a search path variable).
 
-The stack commands upload the template to the cloudformation bucket (see `aws stack bucket`).  
+The stack commands upload the template to the cloudformation bucket (see `little stack bucket` below).
 If the template folder has an `openapi.yaml` file, then the stack helpers inline its contents as the `Body` of the first `ApiGateway::RestApi` resource in the template.
 
 
