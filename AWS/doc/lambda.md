@@ -26,7 +26,23 @@ $ little lambda bundle ./code/
 
 Note: this command requires a `./package.json` file to exist.
 
-### s3_folder [folderPath=.]
+### log-streams functionName [functionVersion=$LATEST]
+
+List the 100 most recent log streams, then filter by function version (default `$LATEST`):
+
+```
+$ little lambda log-streams my-function-name
+```
+
+### log-events functionName [functionVersion=$LATEST]
+
+Retrive the log events from the most recent log stream returned by `log-streams` (above)
+
+```
+$ little lambda log-events my-function-name
+```
+
+### s3-folder [folderPath=.]
 
 Get the S3 folder (key prefix) to which `lambda upload` will post the bundle for the given code folder.
 
