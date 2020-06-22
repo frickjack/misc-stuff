@@ -3,7 +3,7 @@ testStackValidate() {
   local path
   local folder
   local variables
-  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type f -name '*.json' -o -name '*.yaml' | grep -v openapi | grep -v petstore | grep -v sampleStackParams)"
+  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type d -name code -prune -o -type f -name '*.json' -o -name '*.yaml' | grep -v openapi | grep -v petstore | grep -v sampleStackParams | grep -v /code)"
   for path in $templates; do
     folder="$(dirname "$path")"
     variables="$(little stack variables)"; because $? "stack filter collected default variable set"
@@ -20,7 +20,7 @@ testStackFilter() {
   local path
   local folder
   local variables
-  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type f -name '*.json' -o -name '*.yaml'  | grep -v openapi | grep -v petstore | grep -v sampleStackParams)"
+  templates="$(find "$LITTLE_HOME/lib/cloudformation/" -type d -name code -prune -o -type f -name '*.json' -o -name '*.yaml' | grep -v openapi | grep -v petstore | grep -v sampleStackParams | grep -v /code)"
   for path in $templates; do
     folder="$(dirname "$path")"
     variables="$(little stack variables)"; because $? "stack filter collected default variable set"
