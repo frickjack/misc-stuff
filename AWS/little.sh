@@ -64,7 +64,7 @@ littleDoCommand() {
         tool=python
         ;;
       js)
-        tool=nodejs
+        tool=node
         ;;
       *)
         tool=bash
