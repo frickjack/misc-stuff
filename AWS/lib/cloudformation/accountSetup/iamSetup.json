@@ -48,7 +48,8 @@
             } ]
           },
           "ManagedPolicyArns": [
-            "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
+            "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess",
+            "arn:aws:iam::aws:policy/AWSWAFConsoleReadOnlyAccess"
           ],
           "MaxSessionDuration" : 3600,
           "Path" : "/littleware/account/user/",
@@ -68,6 +69,9 @@
                 "Action": [ "sts:AssumeRole" ]
             } ]
           },
+          "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/AWSWAFConsoleReadOnlyAccess"
+          ],
           "MaxSessionDuration" : 3600,
           "Path" : "/littleware/account/user/",
           "RoleName" : "littleOperator"
@@ -88,7 +92,8 @@
           },
           "ManagedPolicyArns": [
               "arn:aws:iam::aws:policy/AWSCloudTrailFullAccess",
-              "arn:aws:iam::aws:policy/IAMFullAccess"
+              "arn:aws:iam::aws:policy/IAMFullAccess",
+              "arn:aws:iam::aws:policy/AWSWAFConsoleReadOnlyAccess"
           ],
           "MaxSessionDuration" : 3600,
           "Path" : "/littleware/account/user/",
@@ -457,6 +462,8 @@
                   "logs:*",
                   "resource-groups:*",
                   "route53:*",
+                  "route53domains:*",
+                  "route53resolver:*",
                   "secretsmanager:*",
                   "ssm:*",
                   "sns:*",

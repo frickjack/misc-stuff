@@ -10,9 +10,9 @@ testLambdaSetup() {
       because $? "successfully setup test folder: $testDir" 1>&2
     /bin/rm -rf package.json
     /bin/rm -rf .git
-    ! name="$(little lambda git_branch 2> /dev/null)";
+    ! name="$(little lambda git-branch 2> /dev/null)";
         because $? "cannot derive git branch if .git does not exist" 1>&2
-    ! name="$(little lambda package_name 2> /dev/null)";
+    ! name="$(little lambda package-name 2> /dev/null)";
         because $? "cannot derive package name if package.json does not exist" 1>&2
     (cat - <<EOM
 {
@@ -37,7 +37,7 @@ testLambdaPackageName() {
     local testDir
     testDir="$(testLambdaSetup)" && cd "$testDir"; 
         because $? "test setup should succeed: $testDir"
-    name="$(little lambda package_name)" \
+    name="$(little lambda package-name)" \
         && /bin/rm -rf "$testDir" \
         && [[ "$name" == '@littleware/bogus' ]];
         because $? "derived expected npm package name from package.json: $name"
@@ -48,7 +48,7 @@ testLambdaGitBranch() {
     local testDir
     testDir="$(testLambdaSetup)" && cd "$testDir";
         because $? "test setup should succeed: $testDir"
-    name="$(little lambda git_branch)" \
+    name="$(little lambda git-branch)" \
         && /bin/rm -rf "$testDir" \
         && [[ "$name" == 'frickjack' ]];
         because $? "derived expected git branch: $name"
@@ -59,9 +59,9 @@ testLambdaLayerName() {
     local testDir
     testDir="$(testLambdaSetup)" && cd "$testDir"; 
         because $? "test setup should succeed: $testDir"
-    name="$(little lambda layer_name)" \
+    name="$(little lambda layer-name)" \
         && /bin/rm -rf "$testDir" \
-        && [[ "$name" == '_littleware_bogus-1_0_0-frickjack' ]];
+        && [[ "$name" == 'littleware_bogus-1_0_0-frickjack' ]];
         because $? "derived expected lambda layer name from package.json and git branch: $name"
 }
 
@@ -85,7 +85,7 @@ testLambdaUpload() {
         && cd "$XDG_RUNTIME_DIR" \
         && /bin/rm -rf "$testDir";
         because $? "little lambda upload should succeed: $path"
-    [[ "$path" =~ ^s3://.+/@littleware/bogus/_littleware_bogus-1_0_0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
+    [[ "$path" =~ ^s3://.+/@littleware/bogus/littleware_bogus-1_0_0-frickjack/bundle-[0-9]+_[0-9]+.zip$ ]];
         because $? "little lambda upload uploads a bundle.zip: $path"
     local clean="${path##s3://}"
     aws s3api head-object --bucket "${clean%%/*}" --key "${clean#*/}" 1>&2; because $? "little lambda upload creates an s3 object at $path"

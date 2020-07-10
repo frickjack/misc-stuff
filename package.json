@@ -16,8 +16,11 @@
     "url": "https://github.com/frickjack/misc-stuff/issues"
   },
   "homepage": "https://github.com/frickjack/misc-stuff#readme",
-  "dependencies": {},
+  "dependencies": {
+    "jasmine": "^3.5.0"
+  },
   "devDependencies": {
-    "marked": "latest"
+    "marked": "latest",
+    "nunjucks": "latest"
   }
 }

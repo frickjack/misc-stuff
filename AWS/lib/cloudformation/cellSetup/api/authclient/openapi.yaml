@@ -1,0 +1,335 @@
+openapi: 3.0.1
+info:
+  title: authclient.frickjack.com
+  description: authclient.frickjack.com API - simple cognito OIDC client
+  contact:
+    email: admin@frickjack.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+- url: /
+tags:
+- name: littleware
+  description: littleware api
+  externalDocs:
+    description: Find out more
+    url: http://swagger.io
+paths:
+  /login:
+    get:
+      summary: oidc client initiate login
+      parameters:
+      - name: redirect_uri
+        in: query
+        description: post login redirect
+        schema: {}
+      responses:
+        302:
+          description: redirect to idp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+  /logout:
+    get:
+      summary: oidc client initiate login
+      parameters:
+      - name: redirect_uri
+        in: query
+        description: post login redirect
+        schema: {}
+      responses:
+        302:
+          description: redirect to idp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+  /user:
+    get:
+      summary: retrieve small user profile
+      responses:
+        200:
+          description: token verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+    options:
+      tags:
+      - CORS
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          description: CORS headers if applicable
+          content: {}
+        500:
+          description: unexpected failure
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+  /loginCallback:
+    get:
+      summary: oidc login callback
+      parameters:
+      - name: state
+        in: query
+        description: client callback state
+        schema: {}
+      - name: code
+        in: query
+        description: oauth auth flow code
+        schema: {}
+      responses:
+        200:
+          description: token verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        302:
+          description: redirect to idp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+  /logoutCallback:
+    get:
+      summary: oidc logout callback
+      responses:
+        200:
+          description: token verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        302:
+          description: redirect to idp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+  /hello:
+    get:
+      summary: oidc logout callback
+      responses:
+        200:
+          description: hello
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        302:
+          description: redirect to idp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: illegal parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+        500:
+          description: unexpected failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: 500
+        uri: { "Fn::Join": ["", [
+          "arn:aws:apigateway:", {"Ref": "AWS::Region"},
+          ":lambda:path/2015-03-31/functions/arn:aws:lambda:",
+          {"Ref": "AWS::Region"},
+          ":", {"Ref": "AWS::AccountId"},
+          ":function:${stageVariables.functionName}/invocations"
+        ]]}
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+components:
+  schemas:
+    Message:
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+    SimpleError:
+      required:
+      - error
+      type: object
+      properties:
+        error:
+          type: string
+    AuthInfo:
+      required:
+      - email
+      - groups
+      - iat
+      type: object
+      properties:
+        email:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        iat:
+          type: integer

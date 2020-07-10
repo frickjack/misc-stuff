@@ -6,7 +6,7 @@ gitops aware heper for interacting with AWS lambda
 
 ### drun
 
-Launch the `node10.x` lambda runtime [docker image](https://github.com/lambci/docker-lambda) in the current directory, and run the specified handler with the given event.
+Launch the `node12.x` lambda runtime [docker image](https://github.com/lambci/docker-lambda) in the current directory, and run the specified handler with the given event.
 
 Ex:
 ```
@@ -15,13 +15,39 @@ $ little lambda drun lambda.lambdaHandler '{ "eventName": "hello" }'
 
 Note: this command requires a `./package.json` file to exist.
 
-### bundle
+### bundle [folderPath=.]
 
-Package the contents of the current directory into a `bundle.zip` file.
-This command will erase an existing `bundle.zip`.
+Package the contents of the given directory into a `bundle.zip` file under the folder.
+This command erases an existing `bundle.zip`.
 
 ```
-$ little lambda package
+$ little lambda bundle ./code/
+```
+
+Note: this command requires a `./package.json` file to exist.
+
+### log-streams functionName [functionVersion=$LATEST]
+
+List the 100 most recent log streams, then filter by function version (default `$LATEST`):
+
+```
+$ little lambda log-streams my-function-name
+```
+
+### log-events functionName [functionVersion=$LATEST]
+
+Retrive the log events from the most recent log stream returned by `log-streams` (above)
+
+```
+$ little lambda log-events my-function-name
+```
+
+### s3-folder [folderPath=.]
+
+Get the S3 folder (key prefix) to which `lambda upload` will post the bundle for the given code folder.
+
+```
+little s3_path ./code/
 ```
 
 Note: this command requires a `./package.json` file to exist.

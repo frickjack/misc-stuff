@@ -8,7 +8,7 @@ source "${LITTLE_HOME}/lib/bash/utils.sh"
 
 
 help() {
-    bash "$LITTLE_HOME/bin/help.sh" lambda
+    bash "$LITTLE_HOME/bin/basic/help.sh" lambda
 }
 
 #
@@ -79,6 +79,34 @@ lambdaLayerName() {
     fi
     name="${packName}-${packVersion}-${gitBranch}"
     # do some cleanup - remove illegal characters, start with a letter
+    name="${name//[ \/@.]/_}"
+    name="${name#_}"
+    echo "$name"
+}
+
+#
+# Derive a sanitized lambda function name from the
+# given nodejs (or whatever) package name.  
+# Removes illegal
+# characters, etc., starts with a letter
+#
+# @param packageName or defaults to lambadaPackName if not given
+# @return echo the sanitized function name
+#
+lambdaFunctionName() {
+    local name
+    local packName=""
+
+    if [[ $# -gt 0 ]]; then
+      packName="$1"
+      shift
+    fi
+    if ! packName="${packName:-$(lambdaPackageName)}"; then
+      gen3_log_err "failed to determine package name from arguments or current folder $(pwd): $@"
+      return 1
+    fi
+    name="${packName}"
+    # do some cleanup - remove illegal characters, start with a letter
     echo "${name//[ \/@.]/_}"
 }
 
@@ -99,26 +127,22 @@ lambdaBundle() {
     if [[ -f ./bundle.zip ]]; then
       /bin/rm ./bundle.zip
     fi
-    zip -r bundle.zip . > /dev/null 2>&1 && echo "$(pwd)/bundle.zip"
-    local result=$?
-    (zipinfo bundle.zip | grep -v node_modules | grep -v .git | head -100) 1>&2
-    return $result
+    find -L . -not -path '????*/node_modules*' -not -path '*/.*' -not -path '*.zip' | zip -@ bundle.zip > /dev/null || return 1
+    echo "$(pwd)/bundle.zip"
+    # send some summary info to stderr for logging
+    (zipinfo -1 bundle.zip | grep -v node_modules | grep -v .git | head -100) 1>&2
+    return 0
 }
 
-
 #
-# Publish the bundle.zip in the current
-# folder to S3 folder
+# Get the s3 folder prefix that the given code path would upload under.
 #
 # @param zipPath path to a local directory path to bundle up and copy to s3 - default to current folder
-# 
-lambdaUpload() {
-    local bundle
+#
+lambdaS3Folder() {
     local branch
-    local cleanBranch
     local packName
     local s3Folder
-    local s3Path
     local bucket
     local zipPath="."
 
@@ -135,14 +159,37 @@ lambdaUpload() {
             layerName="$(lambdaLayerName)" && \
             bucket="$(little stack bucket)" && \
             packName="$(lambdaPackageName)" && \
-            bundle="$(lambdaBundle)" && \
             s3Folder="s3://${bucket}/lambda/${packName}/${layerName}" && \
-            #
-            # do not clean up old packages at this time -
-            # it can screw up cloudformation rollback if
-            # a stack references a key
-            #
-            # (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
+            echo "$s3Folder"
+    )
+    return $?
+}
+
+#
+# Publish the bundle.zip in the current
+# folder to S3 folder
+#
+# @param zipPath path to a local directory path to bundle up and copy to s3 - default to current folder
+# 
+lambdaUpload() {
+    local bundle
+    local s3Folder
+    local s3Path
+    local zipPath="."
+
+    if [[ $# -gt 0 ]]; then
+      zipPath="$1"
+      shift
+    fi
+    s3Folder="$(lambdaS3Folder "$zipPath")" || return $?
+
+    (
+        cd "$zipPath" && \
+            bundle="$(lambdaBundle)" && \
+            # this aggressive cleanup screws up cloudformation rollback
+            #   (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
+                        # this aggressive cleanup screws up cloudformation rollback
+            #   (aws s3 rm --recursive "${s3Folder}" || true) 1>&2 && \
             s3Path="${s3Folder}/bundle-$(date -u +%Y%m%d_%H%M%S).zip" && \
             gen3_log_info "Uploading $bundle to $s3Path" && \
             aws s3 cp "${bundle}" "$s3Path" 1>&2 && \
@@ -154,7 +201,7 @@ lambdaUpload() {
 #
 # Publish the bundle.zip in the current
 # folder.  Copy to S3 folder, then
-# publish to lambda layer under dev/${package_name}_${package_version}_${branch}
+# publish to lambda layer under dev/${package-name}_${package_version}_${branch}
 #
 # @param zipPath the s3://... path of the local folder path to bundle up and copy to s3 -
 #           defaults to current folder
@@ -210,6 +257,37 @@ EOM
     aws lambda publish-layer-version --cli-input-json "$commandJson"
 }
 
+#
+# List the log-streams associated with the given lambda function
+#
+# @param functionName
+# @param functionVersion defaults to '$LATEST'
+#
+lambdaLogStreams() {
+    local functionName
+    functionName="$1"
+    shift || return 1
+    local functionVersion="${1:-\$LATEST}"
+    local logGroup="/aws/lambda/$functionName"
+    (aws logs describe-log-streams --log-group-name "$logGroup" --order-by LastEventTime --descending  --page-size 50 --max-items 100 || echo ERROR) | jq --arg versionSelector "[$functionVersion]" -r '.logStreams | map(select(.logStreamName | contains($versionSelector)))'
+}
+
+#
+# List the events from the most recent log stream
+# associated with the given lambda function
+#
+# @param functionName
+# @param functionVersion defaults to '$LATEST'
+#
+lambdaLogEvents() {
+    local streamInfo
+    local streamName
+    streamInfo="$(lambdaLogStreams "$@")" || return 1
+    streamName="$(jq -e -r '.[0].logStreamName' <<< "$streamInfo")" && [[ -n "$streamName" ]] || return 1
+    local functionName="$1"
+    local logGroup="/aws/lambda/$functionName"
+    aws logs get-log-events --log-group-name "$logGroup" --log-stream-name "${streamName}" | jq -r '.events | map(.timeStampDate = (.timestamp | todate))'
+}
 
 # main ---------------------
 
@@ -225,14 +303,23 @@ if [[ -z "${GEN3_SOURCE_ONLY}" ]]; then
         "drun")
             lambdaDockerRun "$@"
             ;;
-        "layer_name")
+        "layer-name")
             lambdaLayerName "$@"
             ;;
-        "package_name")
+        "package-name")
             lambdaPackageName "$@"
             ;;
-        "git_branch")
+        "git-branch")
             lambdaGitBranch "$@"
+            ;;
+        "log-streams")
+            lambdaLogStreams "$@"
+            ;;
+        "log-events")
+            lambdaLogEvents "$@"
+            ;;
+        "s3-folder")
+            lambdaS3Folder "$@"
             ;;
         "update")
             lambdaUpdateLayer "$@"

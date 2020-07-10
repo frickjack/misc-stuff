@@ -1,5 +1,5 @@
 {
-    "StackName": "little-reuben-gateway-frickjack",
+    "StackName": "sample-gateway-apiclient",
     "Capabilities": [
     ],
     "TimeoutInMinutes": 5,
@@ -11,7 +11,7 @@
         },
         {
             "ParameterKey": "DomainName",
-            "ParameterValue": "api.frickjack.com"
+            "ParameterValue": "apiclient.frickjack.com"
         },
         {
             "ParameterKey": "StackName",
@@ -20,10 +20,6 @@
         {
             "ParameterKey": "StageName",
             "ParameterValue": "dev"
-        },
-        {
-            "ParameterKey": "LambdaLayers",
-            "ParameterValue": "arn:aws:lambda:us-east-2:027326493842:layer:_littleware_little-authn-1_0_1-cicd-pr_3:2"
         },
         {
             "ParameterKey": "LambdaRole",
@@ -36,6 +32,14 @@
         { 
             "ParameterKey": "LambdaConfig",
             "ParameterValue": "applications.api-frickjack-com.reuben.dev.oidc-client-secret"
+        },
+        { 
+            "ParameterKey": "LambdaBucket",
+            "ParameterValue": "cloudformation-frickjack-us-east-2"
+        },
+        { 
+            "ParameterKey": "LambdaKey",
+            "ParameterValue": "lambda/@littleware/reuben-gateway/_littleware_reuben-gateway-1_0_0-dev/bundle-20200425_200627.zip"
         }
     ],
     "Tags": [
@@ -45,7 +49,7 @@
             },
             {
                 "Key": "project",
-                "Value": "api.frickjack.com"
+                "Value": "apiclient.frickjack.com"
             },
             {
                 "Key": "stack",
@@ -61,6 +65,23 @@
             }
     ],
     "Littleware": {
-        "TemplatePath": "lib/cloudformation/cellSetup/apiGateway.json"
+        "TemplatePath": "lib/cloudformation/cellSetup/apiGateway.json",
+        "Variables": {
+            "lambdaVersions": [
+                {
+                    "resourceName": "lambdaVer20200523r0",
+                    "description": "initial prod version"
+                }
+            ],
+            "gatewayDeployments": [
+                {
+                    "resourceName": "deploy20200523r0",
+                    "description": "initial deployment"
+                }
+            ],
+            "prodLambdaVersion": "lambdaVer20200523r0",
+            "prodDeployment": "deploy20200523r0",
+            "betaDeployment": "deploy20200523r0"
+        }
     }
 }

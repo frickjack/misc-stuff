@@ -121,7 +121,11 @@
         "Properties" : {
             "AuthType" : "PERSONAL_ACCESS_TOKEN",
             "ServerType" : "GITHUB",
-            "Token": { "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GithubToken" }, ":SecretString:token}}" ]] }
+            "Token": { "Fn::Join" : 
+              {% raw %}
+               [ "", [ "{{resolve:secretsmanager:", { "Ref": "GithubToken" }, ":SecretString:token}}" ]]
+              {% endraw %}
+            }
           }
       }
     },

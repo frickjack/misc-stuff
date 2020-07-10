@@ -1,6 +1,7 @@
 # TL;DR
 
 What does a manager do?
+This is such garbage.
 
 ## Overview
 
@@ -51,5 +52,60 @@ What does a manager do?
     - Take on work/responsibility
 
 * Develop processes
-    - note: processes have a lifetime - either evolve and change or are replaced over time as new needs, etc arise
+    - an organization is a basket of processes (hiring, promotion, time off, customer relations, design, ...)
     
+
+## Processes
+
+Idea an organization has a hierarchy of processes - leverage, automation, Conway's Law.  Each process takes inputs, and generates output assets.
+You cannot be proficient in all the processes.
+
+Processes have a lifetime - either evolve and change or are replaced over time as new needs, etc arise
+
+Processes embody culture.
+
+* compensation, time off
+* open communication
+* product development and design - who, how
+* dev
+    - PR's
+    - Lynting standards
+    - Code review
+    - unit test
+* qa
+    - test cycles
+    - reports
+    - test definition
+* deploy
+    - code promotion
+* operation
+    - monitoring
+    - cell setup
+    - tenant
+* test
+* customer relations
+* sales
+* payroll
+* finance
+
+An organization is a bucket of people, processes, and products, and must empower its people with processes and tools to produce great products.
+
+## Overview
+
+* Notes/ blog
+* Features/ roadmap
+* TestPlans/ qa
+* Automation/ devsecops
+* Burndown, performance tracking, scheduling
+* SLI and SLO
+* API and UX and Visual design
+* Help and documentation
+* Reports and dashboards
+
+Processes exist in a hierarchy.  Higher level processes build on top of lower level processes with increasing degrees of automation moving down the stack.
+
+* CI, unit testing, lynting, static analysis, code quality, dependency checking, code review, promotion process, version tracking, release notes, release management and CICD
+* infrastructure management - release and rollback, patching - keeping things up to date, secrets management, configuration management, authn and authz, discovery, encryption, configuration management, ...
+* Logging, monitoring, metrics and statistics, analytics, alerting and notifications
+* Culture - values, incentives, career path, performance tracking
+

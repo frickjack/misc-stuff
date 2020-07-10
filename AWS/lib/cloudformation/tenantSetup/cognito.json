@@ -63,8 +63,8 @@
             "email": "email"
           },
           "ProviderDetails": {
-            "client_id": { "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientId}}" ]] },
-            "client_secret": { "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientSecret}}" ]] },
+            "client_id": {% raw %}{ "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientId}}" ]] }{% endraw %},
+            "client_secret": {% raw %}{ "Fn::Join" : [ "", [ "{{resolve:secretsmanager:", { "Ref": "GoogleClientId" }, ":SecretString:clientSecret}}" ]] }{% endraw %},
             "authorize_scopes": "email openid"
           }
       }
