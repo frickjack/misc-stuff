@@ -16,7 +16,14 @@ An API gateway deploys several AWS resources with the goal (usually) of making a
 * We now create beta and production [API stages](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html) that each link to the deployment holding the API definition that we want to publish to the stage.  The stage configures a regional endpoint for accessing the API.
 * Finally, we create a custom domain for our prod and beta API's, and a domain mapping that maps an API stage to a particular URL prefix under the domain (something like https://beta-my.domain/my-api1).  We can setup mappings to link stages for different API's to a common domain (https://beta-my.domain/my-api1, https://beta-my.domain/my-api2, ...).
 
-<img src="./apiGateway.svg" width="100%" style="max-width: 400px;" />
+<style>
+img#diag1 {
+  width: 100%;
+  max-width: 400px;
+}
+</style>
+
+<img id="diag1" src="./apiGateway.svg" />
 
 ## Development Process
 
