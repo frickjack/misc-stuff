@@ -4,14 +4,23 @@ Helpers for interacting with `cloudformation`.
 
 ## Overview
 
+The `little stack` commands allow us to extend cloudfront templates with expressions (from the [nunjucks](https://mozilla.github.io/nunjucks/) template library) that can dynamically add resources to a stack based on variable values.
+The `little stack` tools consume a json stack definition
+with three main parts:
+* a reference to a clouformation template
+* values for the cf parameters defined in the template
+* values for the nunjucks variables leveraged in the template
+
+If an optional `openapi.yaml` file is present, then its contents are also exposed as a nunjucks variable
+
 Most commands take form:
 ```
 little stack command-name [--dryRun] path/to/stackParams.json
 ```
-where `stackParams.json` includes properties for the stack name and parameters, and a `Littleware` block that includes the path to the template relative to the path in the `$LITTLE_HOME` environment variable (TODO - introduce a search path variable).
+where `stackParams.json` includes properties for the stack name and parameters, and a `Littleware` block that includes the path to the template relative to the path in the `$LITTLE_HOME` environment variable (TODO - introduce a search path variable), and nunjucks variable values.
 
 The stack commands upload the template to the cloudformation bucket (see `little stack bucket` below).
-If the template folder has an `openapi.yaml` file, then the stack helpers inline its contents as the `Body` of the first `ApiGateway::RestApi` resource in the template.
+If the template folder has an `openapi.yaml` file, then the stack helpers publish its contents as a nunjucks variable value.
 
 
 ## Use
@@ -100,12 +109,18 @@ Retrieve the event log for a stack
 little stack update path/to/stackParams.json
 ```
 
+### filter
+
+Apply the nunjucks variables from a stack definition to the cloudformation
+tempalte referenced by the stack.
+Ex:
+```
+little stack filter-template path/to/stackParams.json
+```
+
 ### filter-template
 
-Apply the following filters to a cloudformation template.
-
-* inline an `openapi.yaml` or `openapi.json` file in the template directory as the `Body` property
-* apply the nunjucks variables from the optional json `$variablesStr` - see `little stack variables` below.
+Apply the nunjucks variables from the `$variablesStr` option - see `little stack variables` and `little stack filter`.
 
 Ex:
 ```
@@ -128,7 +143,7 @@ little stack resources ./stackParams.json
 ### variables
 
 Extract template variables (for `filter-template`) from the given
-stack parameters
+stack parameters file and adjacent `openapi.yaml`:
 
 Ex:
 ```

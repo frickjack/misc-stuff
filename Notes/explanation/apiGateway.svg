@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="250mm"
+   viewBox="0 0 210 250"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="apiGateway.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.60578002"
+     inkscape:cx="146.75961"
+     inkscape:cy="427.27944"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer5"
+     showgrid="false"
+     inkscape:window-width="1600"
+     inkscape:window-height="845"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Lambda">
+    <g
+       id="g846"
+       transform="translate(0,-53.975028)">
+      <rect
+         y="259.00146"
+         x="28.826469"
+         height="30.573528"
+         width="56.779411"
+         id="rect816"
+         style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <g
+         id="g824">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           x="35.377941"
+           y="273.4147"
+           id="text820"><tspan
+             sodipodi:role="line"
+             id="tspan818"
+             x="35.377941"
+             y="273.4147"
+             style="stroke-width:0.26458332px">Lambda</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="API">
+    <g
+       id="g909"
+       transform="translate(0,-53.975028)">
+      <rect
+         y="258.12793"
+         x="109.19118"
+         height="30.573528"
+         width="56.779411"
+         id="rect816-6"
+         style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <g
+         transform="translate(80.364707,-0.87352311)"
+         id="g824-7">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           x="46.490452"
+           y="273.94388"
+           id="text820-5"><tspan
+             sodipodi:role="line"
+             id="tspan818-3"
+             x="46.490452"
+             y="273.94388"
+             style="stroke-width:0.26458332px">API</tspan></text>
+      </g>
+    </g>
+    <g
+       id="g961"
+       transform="translate(-11.641668,-53.975028)">
+      <rect
+         y="214.29494"
+         x="110.19446"
+         height="30.314011"
+         width="78.794891"
+         id="rect816-6-6"
+         style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.75951827;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <g
+         transform="translate(71.184063,-42.71961)"
+         id="g824-7-2">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           x="46.490452"
+           y="273.94388"
+           id="text820-5-9"><tspan
+             sodipodi:role="line"
+             id="tspan818-3-1"
+             x="46.490452"
+             y="273.94388"
+             style="stroke-width:0.26458332px">Deployment</tspan></text>
+      </g>
+    </g>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 137.71136,204.1529 0.11153,-13.51929"
+       id="path955"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       inkscape:connection-start="#g909" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="Stage">
+    <g
+       id="g990"
+       transform="translate(0,-57.679197)">
+      <rect
+         y="174.46251"
+         x="28.859795"
+         height="30.573528"
+         width="56.779411"
+         id="rect816-6-7"
+         style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <g
+         transform="translate(0.033324,-84.538945)"
+         id="g824-7-0">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           x="41.19878"
+           y="275.5314"
+           id="text820-5-93"><tspan
+             sodipodi:role="line"
+             id="tspan818-3-6"
+             x="41.19878"
+             y="275.5314"
+             style="stroke-width:0.26458332px">Stage</tspan></text>
+      </g>
+    </g>
+    <path
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 85.639206,143.03843 131.90294,160.9129"
+       id="path982"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.27260751px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 50.664705,146.68584 0.873529,57.02999"
+       id="path984"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer5"
+     inkscape:label="Domain">
+    <rect
+       style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect816-6-62"
+       width="56.779411"
+       height="30.573528"
+       x="29.422792"
+       y="69.739067" />
+    <g
+       id="g824-7-6"
+       transform="translate(0.596323,-189.26269)">
+      <text
+         id="text820-5-1"
+         y="271.298"
+         x="35.907108"
+         style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="stroke-width:0.26458332px"
+           y="271.298"
+           x="35.907108"
+           id="tspan818-3-8"
+           sodipodi:role="line">Domain</tspan><tspan
+           style="stroke-width:0.26458332px"
+           y="284.52716"
+           x="35.907108"
+           sodipodi:role="line"
+           id="tspan1011">Mapping</tspan></text>
+    </g>
+    <rect
+       style="opacity:1;fill:#a8a8cd;fill-opacity:1;stroke:#401717;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect816-6-9"
+       width="56.779411"
+       height="30.573528"
+       x="85.513985"
+       y="19.98111" />
+    <g
+       id="g824-7-20"
+       transform="translate(56.687517,-239.02063)">
+      <text
+         id="text820-5-2"
+         y="275.5314"
+         x="36.965443"
+         style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="stroke-width:0.26458332px"
+           y="275.5314"
+           x="36.965443"
+           id="tspan818-3-3"
+           sodipodi:role="line">Domain</tspan></text>
+    </g>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 97.267734,50.554638 75.641494,69.739067"
+       id="path1031"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       inkscape:connection-start="#rect816-6-9"
+       inkscape:connection-end="#rect816-6-62" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 57.635888,100.3126 -0.197112,16.47071"
+       id="path1033"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       inkscape:connection-start="#rect816-6-62"
+       inkscape:connection-end="#g990" />
+  </g>
+</svg>
