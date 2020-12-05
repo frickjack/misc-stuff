@@ -67,6 +67,10 @@
                 {
                     "resourceName": "lambdaD001000003D20200618r0",
                     "description": "little-authn 1.0.3"
+                },
+                {
+                    "resourceName": "lambda20201205r0",
+                    "description": "little-authn 1.0.4"
                 }
             ],
             "gatewayDeployments": [
@@ -75,7 +79,7 @@
                     "description": "initial deployment"
                 }
             ],
-            "prodLambdaVersion": "lambdaD001000003D20200618r0",
+            "prodLambdaVersion": "lambda20201205r0",
             "prodDeployment": "deploy20200523r0",
             "betaDeployment": "deploy20200523r0"
         }

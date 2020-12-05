@@ -98,7 +98,7 @@ simple markdown renderer
 
 publish a message to an sns topic
 
-* [stacks](./stacks.md)
+* [stack](./stack.md)
 
 cloudformation helpers
 

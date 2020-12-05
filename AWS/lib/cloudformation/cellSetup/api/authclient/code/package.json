@@ -2,6 +2,6 @@
     "name": "@littleware/reuben-gateway",
     "version": "1.0.0",
     "dependencies": {
-        "@littleware/little-authn": "^1.0.3"
+        "@littleware/little-authn": "^1.0.4"
     }
 }
