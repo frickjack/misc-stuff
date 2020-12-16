@@ -29,7 +29,7 @@
     "LambdaKey": {
       "Type": "String",
       "Description": "key of s3 path to lambda package",
-      "Default": "lambda/@littleware/reuben-gateway/littleware_reuben-gateway-1_0_0-dev/bundle-20201204_122254.zip",
+      "Default": "lambda/@littleware/reuben-gateway/littleware_reuben-gateway-1_0_0-dev/bundle-20201216_204556.zip",
       "ConstraintDescription": "must be a valid s3 object key"
     },
     "LambdaRole": {
