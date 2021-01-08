@@ -1,0 +1,47 @@
+{
+    "StackName": "nodebuild-little-nodedev",
+    "Capabilities": [
+        "CAPABILITY_NAMED_IAM"
+    ],
+    "TimeoutInMinutes": 5,
+    "EnableTerminationProtection": true,
+    "Parameters" : [
+        {
+            "ParameterKey": "ProjectName",
+            "ParameterValue": "cicd-little-nodedev"
+        },
+        {
+            "ParameterKey": "ServiceRole",
+            "ParameterValue": "arn:aws:iam::027326493842:role/littleCodeBuild"
+        },
+        {
+            "ParameterKey": "GithubRepo",
+            "ParameterValue": "https://github.com/frickjack/little-nodedev.git"
+        }
+    ],
+    "Tags": [
+            {
+                "Key": "org",
+                "Value": "applications"
+            },
+            {
+                "Key": "project",
+                "Value": "cicd-little-nodedev"
+            },
+            {
+                "Key": "stack",
+                "Value": "cell0"
+            },
+            {
+                "Key": "stage",
+                "Value": "dev"
+            },
+            {
+              "Key": "role",
+              "Value": "build"
+            }
+    ],
+    "Littleware": {
+        "TemplatePath": "lib/cloudformation/cicd/nodeBuild.json"
+    }
+}
