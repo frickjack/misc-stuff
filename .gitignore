@@ -1,5 +1,6 @@
 *.env
 *.zip
+*.jar
 *.bak
 .terraform/
 Chef/nodes
